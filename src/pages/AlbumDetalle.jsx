@@ -1,180 +1,184 @@
-import { useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useState } from "react"; // 1. Importamos useState
+import { useNavigate, useParams } from "react-router-dom";
+import FormularioCancion from "./FormularioCancion"; // 2. Importamos el formulario
 
-// Datos de ejemplo mientras no hay resultados reales del backend
-const albumesData = {
-  nocturno: {
-    nombre: "Nocturno",
-    artista: "Kira Luz",
-    artistaId: "kira-luz",
-    anio: "2024",
-    canciones: [
-      { titulo: "Bajo Neón", duracion: "3:47" },
-      { titulo: "Ciudad Dormida", duracion: "3:12" },
-      { titulo: "Espejismo", duracion: "4:01" },
-      { titulo: "Piel de Vidrio", duracion: "3:28" },
-      { titulo: "Insomnio", duracion: "2:54" },
-      { titulo: "Distancia Azul", duracion: "3:40" },
-      { titulo: "Reflejo", duracion: "3:05" },
-      { titulo: "Nocturno", duracion: "4:15" },
-      { titulo: "Silencio", duracion: "4:22" },
-      { titulo: "Amanecer", duracion: "5:16" },
-    ],
-  },
+const album = {
+  nombre: "Nocturno",
+  artista: "Aracely Hernández",
+  anio: 2024,
+  totalCanciones: 10,
+  duracionTotal: "38 min",
+  portadaUrl: null,
 };
 
-function calcularDuracionTotal(canciones) {
-  const totalSegundos = canciones.reduce((acumulado, cancion) => {
-    const [min, seg] = cancion.duracion.split(":").map(Number);
-    return acumulado + min * 60 + seg;
-  }, 0);
-  return `${Math.round(totalSegundos / 60)} min`;
-}
+// Datos iniciales pasados fuera para el estado
+const listaInicialCanciones = [
+  { id: 1, titulo: "Bajo Neón", duracion: "3:47" },
+  { id: 2, titulo: "Ciudad Dormida", duracion: "3:12" },
+  { id: 3, titulo: "Espejismo", duracion: "4:01" },
+  { id: 4, titulo: "Piel de Vidrio", duracion: "3:28" },
+  { id: 5, titulo: "Insomnio", duracion: "2:54" },
+  { id: 6, titulo: "Distancia Azul", duracion: "3:40" },
+  { id: 7, titulo: "Reflejo", duracion: "3:05" },
+  { id: 8, titulo: "Nocturno", duracion: "4:15" },
+  { id: 9, titulo: "Silencio", duracion: "4:22" },
+  { id: 10, titulo: "Amanecer", duracion: "5:16" },
+];
 
 export default function AlbumDetalle() {
-  const { albumId } = useParams();
   const navigate = useNavigate();
-  const album = albumesData[albumId];
+  const { albumId } = useParams();
 
-  const [menuAbierto, setMenuAbierto] = useState(false);
-  const [enBiblioteca, setEnBiblioteca] = useState(true);
+  // Estados dinámicos
+  const [canciones, setCanciones] = useState(listaInicialCanciones);
+  const [mostrarFormulario, setMostrarFormulario] = useState(false);
 
-  if (!album) {
-    return (
-      <div className="flex-1 flex items-center justify-center bg-[#0f0d14]">
-        <p className="text-slate-400">Álbum no encontrado</p>
-      </div>
-    );
-  }
-
-  const manejarCompartir = () => {
-    navigator.clipboard?.writeText(window.location.href);
-    setMenuAbierto(false);
+  // Función para eliminar canción
+  const eliminarCancion = (id) => {
+    setCanciones(canciones.filter((cancion) => cancion.id !== id));
   };
 
-  const manejarIrAlArtista = () => {
-    navigate(`/artista/${album.artistaId}`);
-    setMenuAbierto(false);
+
+  const agregarCancion = (nuevaCancion) => {
+  const nueva = {
+    id: Date.now(), // Simula el BIGSERIAL de tu base de datos
+    nombre: nuevaCancion.nombre,
+    duracion_segundos: nuevaCancion.duracion_segundos,
+    fecha_lanzamiento: nuevaCancion.fecha_lanzamiento,
+    portada: nuevaCancion.portada,
+    archivo_audio: nuevaCancion.archivo_audio,
+    album_id: albumId, // El parámetro obtenido de useParams()
+    artista_id: 1, // Aquí asignarías el ID real del artista del álbum
   };
 
-  const manejarToggleBiblioteca = () => {
-    setEnBiblioteca(!enBiblioteca);
-    setMenuAbierto(false);
-  };
+  setCanciones([...canciones, nueva]);
+  setMostrarFormulario(false);
+};
 
+const formatearDuracion = (segundosTotales) => {
+  if (!segundosTotales) return "0:00";
+  const mins = Math.floor(segundosTotales / 60);
+  const segs = segundosTotales % 60;
+  return `${mins}:${segs < 10 ? "0" : ""}${segs}`;
+};
+
+ 
   return (
-    <div className="flex-1 overflow-y-auto bg-[#0f0d14]">
-      {/* Header con degradado a todo lo ancho */}
-      <div className="bg-gradient-to-b from-purple-800 to-[#3c1e5a] px-8 pt-10 pb-8">
-        <button
-          onClick={() => navigate(-1)}
-          className="w-9 h-9 rounded-full bg-black/30 hover:bg-black/50 flex items-center justify-center text-white transition-colors mb-8"
-        >
-          <i className="pi pi-chevron-left" />
-        </button>
+    <div className="min-h-screen bg-[#0f0b1a] text-white px-10 py-10">
+      <button
+        type="button"
+        onClick={() => navigate(-1)}
+        aria-label="Volver"
+        className="text-[#b9b3d0] hover:text-white transition-colors mb-6 flex items-center gap-2 text-sm"
+      >
+        <IconoFlechaAtras className="w-4 h-4" /> Volver
+      </button>
 
-        <div className="flex items-end gap-6">
-          <div className="w-52 h-52 rounded-lg bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center shrink-0 shadow-2xl">
-            <i className="pi pi-headphones text-white text-6xl" />
-          </div>
-          <div>
-            <p className="text-sm text-slate-200 mb-2">Álbum</p>
-            <h1 className="text-6xl font-extrabold text-white mb-4">{album.nombre}</h1>
-            <p className="text-sm text-slate-300">
-              {album.artista} • {album.anio} • {album.canciones.length} canciones, {calcularDuracionTotal(album.canciones)}
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Controles */}
-      <div className="flex items-center gap-6 px-8 pt-8 relative">
-        <button className="w-14 h-14 rounded-full bg-purple-500 hover:bg-purple-400 hover:scale-105 flex items-center justify-center transition-all">
-          <i className="pi pi-play text-white text-xl ml-0.5" />
-        </button>
-        <button className="text-slate-300 hover:text-white transition-colors">
-          <i className="pi pi-sync text-2xl" />
-        </button>
-        <button
-          onClick={manejarToggleBiblioteca}
-          className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
-            enBiblioteca
-              ? "bg-purple-500/20 hover:bg-purple-500/30 text-purple-400"
-              : "border border-slate-500 hover:border-white text-slate-300 hover:text-white"
-          }`}
-        >
-          <i className="pi pi-check" />
-        </button>
-
-        <div className="relative">
-          <button
-            onClick={() => setMenuAbierto(!menuAbierto)}
-            className="text-slate-300 hover:text-white transition-colors"
-          >
-            <i className="pi pi-ellipsis-h text-xl" />
-          </button>
-
-          {menuAbierto && (
-            <>
-              <div
-                className="fixed inset-0 z-40"
-                onClick={() => setMenuAbierto(false)}
-              />
-              <div className="absolute left-0 top-10 z-50 w-56 bg-[#282828] rounded-lg shadow-xl py-2">
-                <button
-                  onClick={manejarToggleBiblioteca}
-                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-white hover:bg-[#3a3a3a] transition-colors text-left"
-                >
-                  <i className={enBiblioteca ? "pi pi-check-circle text-purple-400" : "pi pi-plus-circle"} />
-                  {enBiblioteca ? "Eliminar de Tu biblioteca" : "Añadir a Tu biblioteca"}
-                </button>
-                <button
-                  onClick={() => setMenuAbierto(false)}
-                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-white hover:bg-[#3a3a3a] transition-colors text-left"
-                >
-                  <i className="pi pi-list" />
-                  Añadir a playlist
-                </button>
-                <button
-                  onClick={manejarCompartir}
-                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-white hover:bg-[#3a3a3a] transition-colors text-left"
-                >
-                  <i className="pi pi-share-alt" />
-                  Compartir
-                </button>
-                <button
-                  onClick={manejarIrAlArtista}
-                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-white hover:bg-[#3a3a3a] transition-colors text-left"
-                >
-                  <i className="pi pi-user" />
-                  Ir al perfil del artista
-                </button>
-              </div>
-            </>
+      <div className="flex items-end gap-6 mb-6">
+        <div className="w-32 h-32 md:w-36 md:h-36 rounded-xl bg-gradient-to-br from-[#9a8ef0] to-[#4a3d78] flex items-center justify-center flex-shrink-0 overflow-hidden">
+          {album.portadaUrl ? (
+            <img src={album.portadaUrl} alt={`Portada del álbum ${album.nombre}`} className="w-full h-full object-cover" />
+          ) : (
+            <IconoNota className="w-12 h-12 text-[#e5e0f7]" />
           )}
         </div>
+        <div className="flex flex-col gap-1">
+          <span className="text-xs text-[#a29cba] tracking-wide">Álbum</span>
+          <h1 className="text-3xl md:text-4xl font-medium">{album.nombre}</h1>
+          <span className="text-sm text-[#c7c1de]">
+            <span className="font-medium text-white">{album.artista}</span> · Álbum · {album.anio}
+          </span>
+          <span className="text-xs text-[#79738f]">
+            {canciones.length} canciones · {album.duracionTotal} {/* Adaptado para contar canciones dinámicas */}
+          </span>
+        </div>
       </div>
 
-      {/* Lista de canciones */}
-      <div className="px-8 pt-8 pb-12">
-        <div className="border-b border-[#2a2635] pb-2 mb-2 flex items-center px-3">
-          <span className="text-slate-500 text-xs w-8">#</span>
-          <span className="text-slate-500 text-xs flex-1">TÍTULO</span>
-          <span className="text-slate-500 text-xs">DURACIÓN</span>
-        </div>
-        <div>
-          {album.canciones.map((cancion, indice) => (
-            <div
-              key={cancion.titulo}
-              className="flex items-center px-3 py-2.5 rounded-lg hover:bg-[#221f2e] transition-colors cursor-pointer"
-            >
-              <span className="text-slate-500 w-8 text-sm">{indice + 1}</span>
-              <span className="text-white text-sm font-medium flex-1">{cancion.titulo}</span>
-              <span className="text-slate-500 text-sm">{cancion.duracion}</span>
-            </div>
-          ))}
-        </div>
+      <div className="flex items-center gap-4 mb-7">
+        <button type="button" className="bg-[#8b7ee0] text-[#1a1330] rounded-full px-6 py-2.5 text-sm font-medium flex items-center gap-2 hover:bg-[#9a8ef0] transition-colors">
+          <IconoPlay className="w-4 h-4" /> Reproducir
+        </button>
+        <button type="button" aria-label="Agregado a tu biblioteca" className="border border-[#55507a] text-[#8b7ee0] rounded-full w-10 h-10 flex items-center justify-center hover:bg-white/5 transition-colors">
+          <IconoCheck className="w-4 h-4" />
+        </button>
+        <button type="button" aria-label="Reproducción aleatoria" className="text-[#b9b3d0] p-2 hover:text-white transition-colors">
+          <IconoAleatorio className="w-5 h-5" />
+        </button>
+        
+        {/* NUEVO BOTÓN: AGREGAR CANCIÓN */}
+        <button 
+          type="button" 
+          onClick={() => setMostrarFormulario(true)}
+          className="border border-[#8b7ee0] text-[#8b7ee0] rounded-full px-4 py-2 text-sm font-medium hover:bg-[#8b7ee0]/10 transition-colors ml-2"
+        >
+          + Agregar Canción
+        </button>
+
+        <button type="button" aria-label="Más opciones" className="text-[#b9b3d0] p-2 ml-auto hover:text-white transition-colors">
+          <IconoPuntos className="w-5 h-5" />
+        </button>
       </div>
+
+      <div className="flex flex-col">
+        {/* Cambiado grid-cols para dar espacio al icono de eliminar */}
+        <div className="grid grid-cols-[24px_1fr_70px_40px] gap-4 px-3 py-2 text-xs text-[#79738f] border-b border-[#2a2440]">
+          <span>#</span>
+          <span>Título</span>
+          <span className="text-right">Duración</span>
+          <span className="text-center"></span>
+        </div>
+        
+        {canciones.map((cancion, index) => {
+          const esActual = cancion.titulo === album.nombre;
+          return (
+            <div 
+              key={cancion.id} 
+              className={`grid grid-cols-[24px_1fr_70px_40px] gap-4 px-3 py-2.5 items-center rounded-md hover:bg-white/5 transition-colors group ${esActual ? "bg-[#8b7ee0]/10" : ""}`}
+            >
+              <span className={`text-sm ${esActual ? "text-[#8b7ee0]" : "text-[#79738f]"}`}>{index + 1}</span>
+              <span className={`text-sm font-medium ${esActual ? "text-[#8b7ee0]" : ""}`}>{cancion.titulo}</span>
+              <span className={`text-right text-sm ${esActual ? "text-[#8b7ee0]" : "text-[#a29cba]"}`}>{cancion.duracion}</span>
+              
+              {/* NUEVO BOTÓN: ELIMINAR CANCIÓN (Aparece al hacer hover sobre la fila) */}
+              <button
+                type="button"
+                onClick={() => eliminarCancion(cancion.id)}
+                className="opacity-0 group-hover:opacity-100 text-[#ff5c5c] hover:text-[#ff3b3b] transition-all p-1 flex items-center justify-center"
+                title="Eliminar canción"
+              >
+                <IconoEliminar className="w-4 h-4" />
+              </button>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Renderizado condicional del formulario modal */}
+      {mostrarFormulario && (
+        <FormularioCancion 
+          onAgregar={agregarCancion} 
+          onCancelar={() => setMostrarFormulario(false)} 
+        />
+      )}
     </div>
   );
 }
+
+// Iconos SVGs previos (Omitidos en esta visualización por brevedad pero mantén los tuyos)...
+
+// NUEVO ICONO: Basurero para borrar
+function IconoEliminar({ className }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
+      <path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+// Asegúrate de conservar tus otras funciones de iconos abajo...
+function IconoFlechaAtras({ className }) { return ( <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true"><path d="M15 18l-6-6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg> ); }
+function IconoNota({ className }) { return ( <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true"><circle cx="7" cy="18" r="3" fill="currentColor" /><circle cx="17" cy="16" r="3" fill="currentColor" /><path d="M10 18V5l10-2v13" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg> ); }
+function IconoPlay({ className }) { return ( <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden="true"><path d="M8 5v14l11-7z" /></svg> ); }
+function IconoCheck({ className }) { return ( <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true"><path d="M5 12l5 5 9-9" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" /></svg> ); }
+function IconoAleatorio({ className }) { return ( <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true"><path d="M3 6h3.5L15 18h6M3 18h3.5L11 12M18 6h3M18 6l-2-2M18 6l-2 2M21 18l-2-2M21 18l-2 2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg> ); }
+function IconoPuntos({ className }) { return ( <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden="true"><circle cx="5" cy="12" r="2" /><circle cx="12" cy="12" r="2" /><circle cx="19" cy="12" r="2" /></svg> ); }

@@ -30,8 +30,10 @@ export default function Router() {
           <Route path="/perfil" element={<Perfil />} />
           <Route path="/configuracion" element={<Configuracion />} />
         </Route>
-
+            
         <Route path="*" element={<Navigate to="/login" replace />} />
+
+      
       </Routes>
     </BrowserRouter>
   );

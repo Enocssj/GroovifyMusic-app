@@ -10,13 +10,21 @@ export default function LoginPage() {
   const navigate = useNavigate();
 
   const manejarEnvio = (evento) => {
-    evento.preventDefault();
-    // Conexión real con el backend se agrega después.
-    const nombreTemporal = email.split("@")[0];
-    iniciarSesion({ nombre: nombreTemporal, email, tipoCuenta: "USUARIO" });
-    navigate("/");
-  };
+  evento.preventDefault();
+  const nombreTemporal = email.split("@")[0];
 
+  const cuentaRegistrada = buscarUsuarioPorEmail(email);
+  const tipoCuenta = cuentaRegistrada?.tipoCuenta ?? "USUARIO";
+  const nombre = cuentaRegistrada?.nombre ?? nombreTemporal;
+
+  iniciarSesion({ nombre, email, tipoCuenta });
+
+  if (tipoCuenta === "ARTISTA") {
+    navigate(`/artista/${nombre}`);
+  } else {
+    navigate("/");
+  }
+};
   return (
     <div className="h-screen w-full flex bg-[#18151f] overflow-hidden">
       {/* Panel izquierdo */}

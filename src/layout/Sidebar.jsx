@@ -7,7 +7,6 @@ const opcionesMenu = [
   { etiqueta: "Perfil", icono: "pi pi-user", ruta: "/perfil" },
 ];
 
-// Empieza vacío - se llenará con las playlists reales del usuario
 const playlists = [];
 
 export default function Sidebar() {

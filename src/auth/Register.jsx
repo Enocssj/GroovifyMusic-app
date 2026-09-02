@@ -9,15 +9,24 @@ export default function RegisterPage() {
   const [confirmarPassword, setConfirmarPassword] = useState("");
   const [aceptaTerminos, setAceptaTerminos] = useState(true);
   const [tipoCuenta, setTipoCuenta] = useState("USUARIO");
-  const { iniciarSesion } = useSesion();
+  const { iniciarSesion, registrarUsuarioMock } = useSesion();
   const navigate = useNavigate();
 
-  const manejarEnvio = (evento) => {
-    evento.preventDefault();
-    // Conexión real con el backend se agrega después.
-    iniciarSesion({ nombre: username, email, tipoCuenta });
+const manejarEnvio = (evento) => {
+  evento.preventDefault();
+  const datosUsuario = { nombre: username, email, tipoCuenta };
+
+  registrarUsuarioMock(datosUsuario); // guarda el tipo de cuenta real para este correo
+  iniciarSesion(datosUsuario);
+
+  if (tipoCuenta === "ARTISTA") {
+    navigate(`/artista/${username}`);
+  } else {
     navigate("/");
-  };
+  }
+};
+
+
 
   return (
     <div className="h-screen w-full flex bg-[#18151f] overflow-hidden">
