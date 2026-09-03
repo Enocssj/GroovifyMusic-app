@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useSesion } from "../auth/SesionTemporal";
+import { useAuth } from "../auth/AuthContext"; // ajusta la ruta según dónde esté Perfil.jsx
 import EditarPerfilModal from "./EditarPerfilModal";
 
 const opcionesPerfil = [
@@ -9,12 +9,12 @@ const opcionesPerfil = [
 ];
 
 export default function Perfil() {
-  const { usuario, cerrarSesion } = useSesion();
+  const { usuario, logout } = useAuth();
   const navigate = useNavigate();
   const [modalAbierto, setModalAbierto] = useState(false);
 
   const manejarCerrarSesion = () => {
-    cerrarSesion();
+    logout();
     navigate("/login");
   };
 
@@ -57,7 +57,7 @@ export default function Perfil() {
           )}
           <div>
             <h2 className="text-xl font-bold text-white">{usuario?.nombre || "Usuario"}</h2>
-            <p className="text-slate-400 text-sm">{usuario?.email || "Sin correo registrado"}</p>
+            <p className="text-slate-400 text-sm">{usuario?.correo || "Sin correo registrado"}</p>
           </div>
         </div>
 

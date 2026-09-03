@@ -1,20 +1,36 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useSesion } from "./SesionTemporal";
+import { useAuth } from "./AuthContext";
+import axiosClient from "../services/axiosClient";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("");
+  const [correo, setCorreo] = useState("");
   const [password, setPassword] = useState("");
   const [mostrarPassword, setMostrarPassword] = useState(false);
-  const { iniciarSesion } = useSesion();
+  const [error, setError] = useState("");
+  const [cargando, setCargando] = useState(false);
+
+  const { login } = useAuth();
   const navigate = useNavigate();
 
-  const manejarEnvio = (evento) => {
+  const manejarEnvio = async (evento) => {
     evento.preventDefault();
-    // Conexión real con el backend se agrega después.
-    const nombreTemporal = email.split("@")[0];
-    iniciarSesion({ nombre: nombreTemporal, email, tipoCuenta: "USUARIO" });
-    navigate("/");
+    setError("");
+    setCargando(true);
+
+    try {
+      const response = await axiosClient.post("/auth/login", {
+        correo,
+        password,
+      });
+
+      login(response.data.token);
+      navigate("/");
+    } catch (err) {
+      setError(err.response?.data?.message || "Credenciales incorrectas");
+    } finally {
+      setCargando(false);
+    }
   };
 
   return (
@@ -38,14 +54,20 @@ export default function LoginPage() {
             Inicia sesión para continuar
           </p>
 
+          {error && (
+            <div className="mb-4 p-3 bg-red-500/20 border border-red-500 text-red-300 rounded-lg text-sm text-center">
+              {error}
+            </div>
+          )}
+
           <form onSubmit={manejarEnvio}>
             <label className="block text-sm text-slate-300 mb-1">
               Correo electrónico
             </label>
             <input
               type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              value={correo}
+              onChange={(e) => setCorreo(e.target.value)}
               placeholder="nombre@correo.com"
               className="w-full bg-[#221f2e] border border-[#3a3550] rounded-lg px-4 py-3 mb-4 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
               required
@@ -79,9 +101,10 @@ export default function LoginPage() {
 
             <button
               type="submit"
-              className="w-full bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-400 hover:to-purple-500 text-white font-semibold py-3 rounded-full transition-colors"
+              disabled={cargando}
+              className="w-full bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-400 hover:to-purple-500 text-white font-semibold py-3 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Iniciar sesión
+              {cargando ? "Iniciando sesión..." : "Iniciar sesión"}
             </button>
           </form>
 

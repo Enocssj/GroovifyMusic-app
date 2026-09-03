@@ -1,8 +1,8 @@
 import { useState, useRef } from "react";
-import { useSesion } from "../auth/SesionTemporal";
+import { useAuth } from "../auth/AuthContext";
 
 export default function EditarPerfilModal({ abierto, onCerrar }) {
-  const { usuario, actualizarUsuario } = useSesion();
+  const { usuario, actualizarUsuario } = useAuth();
   const inputFotoRef = useRef(null);
 
   const [nombre, setNombre] = useState(usuario?.nombre || "");

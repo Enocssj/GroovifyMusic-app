@@ -1,11 +1,10 @@
 import { useState } from "react";
-import { useSesion } from "../auth/SesionTemporal";
+import { useAuth } from "../auth/AuthContext"; 
 
 export default function TusMeGusta() {
-  const { usuario } = useSesion();
+  const { usuario } = useAuth();
   const [busqueda, setBusqueda] = useState("");
 
-  // Se llenará con las canciones reales que el usuario marque con me gusta
   const cancionesFavoritas = [];
 
   return (

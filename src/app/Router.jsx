@@ -2,6 +2,8 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import AppLayout from "./AppLayout";
 import LoginPage from "../auth/Login";
 import RegisterPage from "../auth/Register";
+import RutaProtegida from "../auth/RutaProtegida";
+import RutaPublica from "../auth/RutaPublica";
 import Home from "../pages/Home";
 import Buscar from "../pages/Buscar";
 import Biblioteca from "../pages/Biblioteca";
@@ -16,22 +18,98 @@ export default function Router() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
+        {/* Rutas públicas solo para no autenticados */}
+        <Route
+          path="/login"
+          element={
+            <RutaPublica>
+              <LoginPage />
+            </RutaPublica>
+          }
+        />
+        <Route
+          path="/register"
+          element={
+            <RutaPublica>
+              <RegisterPage />
+            </RutaPublica>
+          }
+        />
 
+        {/* Layout con sidebar, visible con o sin sesión */}
         <Route element={<AppLayout />}>
+          {/* Home es pública: se puede explorar sin login */}
           <Route path="/" element={<Home />} />
-          <Route path="/buscar" element={<Buscar />} />
-          <Route path="/biblioteca" element={<Biblioteca />} />
-          <Route path="/biblioteca/tus-me-gusta" element={<TusMeGusta />} />
-          <Route path="/artista/:artistaId" element={<ArtistaPerfil />} />
-          <Route path="/album/:albumId" element={<AlbumDetalle />} />
-          <Route path="/reproduciendo" element={<Reproductor />} />
-          <Route path="/perfil" element={<Perfil />} />
-          <Route path="/configuracion" element={<Configuracion />} />
+
+          {/* Todo lo demás sigue exigiendo sesión, ruta por ruta */}
+          <Route
+            path="/buscar"
+            element={
+              <RutaProtegida>
+                <Buscar />
+              </RutaProtegida>
+            }
+          />
+          <Route
+            path="/biblioteca"
+            element={
+              <RutaProtegida>
+                <Biblioteca />
+              </RutaProtegida>
+            }
+          />
+          <Route
+            path="/biblioteca/tus-me-gusta"
+            element={
+              <RutaProtegida>
+                <TusMeGusta />
+              </RutaProtegida>
+            }
+          />
+          <Route
+            path="/artista/:artistaId"
+            element={
+              <RutaProtegida>
+                <ArtistaPerfil />
+              </RutaProtegida>
+            }
+          />
+          <Route
+            path="/album/:albumId"
+            element={
+              <RutaProtegida>
+                <AlbumDetalle />
+              </RutaProtegida>
+            }
+          />
+          <Route
+            path="/reproduciendo"
+            element={
+              <RutaProtegida>
+                <Reproductor />
+              </RutaProtegida>
+            }
+          />
+          <Route
+            path="/perfil"
+            element={
+              <RutaProtegida>
+                <Perfil />
+              </RutaProtegida>
+            }
+          />
+          <Route
+            path="/configuracion"
+            element={
+              <RutaProtegida>
+                <Configuracion />
+              </RutaProtegida>
+            }
+          />
         </Route>
 
-        <Route path="*" element={<Navigate to="/login" replace />} />
+        {/* Ruta 404 */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
   );

@@ -1,4 +1,4 @@
-import { useSesion } from "../auth/SesionTemporal";
+import { useAuth } from "../auth/AuthContext"; // ajusta la ruta según dónde esté Configuracion.jsx
 
 function Fila({ label, sub, children }) {
   return (
@@ -22,7 +22,7 @@ function Seccion({ titulo, children }) {
 }
 
 export default function Configuracion() {
-  const { usuario } = useSesion();
+  const { usuario } = useAuth();
 
   return (
     <div className="flex-1 overflow-y-auto bg-[#0f0d14]">
@@ -30,7 +30,7 @@ export default function Configuracion() {
         <h1 className="text-3xl font-bold text-white mb-8">Configuración</h1>
 
         <Seccion titulo="Cuenta">
-          <Fila label="Correo electrónico" sub={usuario?.email || "Sin correo registrado"}>
+          <Fila label="Correo electrónico" sub={usuario?.correo || "Sin correo registrado"}>
             <button className="text-sm text-purple-400 hover:text-purple-300 font-medium">
               Editar
             </button>

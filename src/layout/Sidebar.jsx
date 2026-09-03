@@ -1,16 +1,18 @@
 import { NavLink } from "react-router-dom";
+import { useAuth } from "../auth/AuthContext";
 
-const opcionesMenu = [
+const opcionesMenuBase = [
   { etiqueta: "Inicio", icono: "pi pi-home", ruta: "/" },
   { etiqueta: "Buscar", icono: "pi pi-search", ruta: "/buscar" },
   { etiqueta: "Biblioteca", icono: "pi pi-book", ruta: "/biblioteca" },
-  { etiqueta: "Perfil", icono: "pi pi-user", ruta: "/perfil" },
 ];
 
 // Empieza vacío - se llenará con las playlists reales del usuario
 const playlists = [];
 
 export default function Sidebar() {
+  const { estaAutenticado } = useAuth();
+
   return (
     <aside className="w-64 h-screen bg-[#18151f] border-r border-[#2a2635] flex flex-col shrink-0">
       <div className="flex items-center gap-2 px-6 py-6">
@@ -21,7 +23,7 @@ export default function Sidebar() {
       </div>
 
       <nav className="px-3">
-        {opcionesMenu.map((opcion) => (
+        {opcionesMenuBase.map((opcion) => (
           <NavLink
             key={opcion.etiqueta}
             to={opcion.ruta}
@@ -38,24 +40,44 @@ export default function Sidebar() {
             {opcion.etiqueta}
           </NavLink>
         ))}
+
+        {estaAutenticado && (
+          <NavLink
+            to="/perfil"
+            className={({ isActive }) =>
+              `flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium mb-1 transition-colors ${
+                isActive
+                  ? "bg-[#2a2635] text-white"
+                  : "text-slate-400 hover:bg-[#221f2e] hover:text-white"
+              }`
+            }
+          >
+            <i className="pi pi-user text-base" />
+            Perfil
+          </NavLink>
+        )}
       </nav>
 
       <div className="mt-6 px-6">
         <p className="text-xs font-semibold text-slate-500 tracking-wide mb-3">
           TUS PLAYLISTS
         </p>
-        {playlists.length === 0 ? (
-          <p className="text-sm text-slate-500">Aún no tienes playlists</p>
+        {estaAutenticado ? (
+          playlists.length === 0 ? (
+            <p className="text-sm text-slate-500">Aún no tienes playlists</p>
+          ) : (
+            <ul className="space-y-2">
+              {playlists.map((nombre) => (
+                <li key={nombre}>
+                  <a href="#" className="text-sm text-slate-400 hover:text-white transition-colors">
+                    {nombre}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          )
         ) : (
-          <ul className="space-y-2">
-            {playlists.map((nombre) => (
-              <li key={nombre}>
-                <a href="#" className="text-sm text-slate-400 hover:text-white transition-colors">
-                  {nombre}
-                </a>
-              </li>
-            ))}
-          </ul>
+          <p className="text-sm text-slate-500">Inicia sesión para ver tus playlists</p>
         )}
       </div>
     </aside>
