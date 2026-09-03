@@ -1,4 +1,4 @@
-import { useAuth } from "../auth/AuthContext"; // ajusta la ruta según dónde esté Configuracion.jsx
+import { useAuth } from "../../auth/AuthContext";
 
 function Fila({ label, sub, children }) {
   return (

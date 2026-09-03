@@ -10,6 +10,8 @@ export default function RegisterPage() {
   const [confirmarPassword, setConfirmarPassword] = useState("");
   const [fechaNacimiento, setFechaNacimiento] = useState("");
   const [tipoCuenta, setTipoCuenta] = useState("USUARIO");
+  const [biografia, setBiografia] = useState("");
+  const [aceptaTerminos, setAceptaTerminos] = useState(false);
   const [imagen, setImagen] = useState(null);
   const [error, setError] = useState("");
   const [cargando, setCargando] = useState(false);
@@ -28,6 +30,12 @@ export default function RegisterPage() {
       return;
     }
 
+    if (!aceptaTerminos) {
+      setError("Debes aceptar los términos y condiciones");
+      setCargando(false);
+      return;
+    }
+
     try {
       const formData = new FormData();
       const usuarioData = {
@@ -36,6 +44,9 @@ export default function RegisterPage() {
         password,
         rol: tipoCuenta,
         fechaNacimiento: fechaNacimiento || "2000-01-01",
+        ...(tipoCuenta === "ARTISTA" && biografia.trim()
+          ? { biografia: biografia.trim() }
+          : {}),
       };
 
       const usuarioBlob = new Blob([JSON.stringify(usuarioData)], {
@@ -49,15 +60,11 @@ export default function RegisterPage() {
       const response = await axiosClient.post("/auth/register", formData);
       const data = response.data;
 
-      if (data.token) {
-        login(data.token);
-        navigate("/");
+      login(data.token);
+
+      if (tipoCuenta === "ARTISTA") {
+        navigate("/mi-perfil-artista");
       } else {
-        const loginResponse = await axiosClient.post("/auth/login", {
-          correo,
-          password,
-        });
-        login(loginResponse.data.token);
         navigate("/");
       }
     } catch (error) {
@@ -84,8 +91,8 @@ export default function RegisterPage() {
         <p className="text-purple-200 text-sm">Únete y arma tu propia banda sonora.</p>
       </div>
 
-      <div className="flex-1 min-w-0 flex flex-col items-center justify-center px-6 h-full">
-        <div className="w-full max-w-sm lg:max-w-md">
+      <div className="flex-1 min-w-0 flex flex-col items-center justify-center px-6 h-full overflow-y-auto">
+        <div className="w-full max-w-sm lg:max-w-md py-6">
           <h2 className="text-2xl font-bold text-white text-center mb-4">
             Crear cuenta
           </h2>
@@ -159,6 +166,21 @@ export default function RegisterPage() {
               className="w-full bg-[#221f2e] border border-[#3a3550] rounded-lg px-3 py-2 mb-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
             />
 
+            {tipoCuenta === "ARTISTA" && (
+              <>
+                <label className="block text-xs text-slate-300 mb-1">
+                  Biografía <span className="text-slate-500">(opcional)</span>
+                </label>
+                <textarea
+                  value={biografia}
+                  onChange={(e) => setBiografia(e.target.value)}
+                  rows={3}
+                  placeholder="Cuéntanos sobre ti como artista..."
+                  className="w-full bg-[#221f2e] border border-[#3a3550] rounded-lg px-3 py-2 mb-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
+                />
+              </>
+            )}
+
             <label className="block text-xs text-slate-300 mb-1">
               Contraseña
             </label>
@@ -190,6 +212,21 @@ export default function RegisterPage() {
               onChange={(e) => setImagen(e.target.files?.[0] || null)}
               className="w-full bg-[#221f2e] border border-[#3a3550] rounded-lg px-3 py-2 mb-3 text-xs text-white file:mr-3 file:py-1 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-purple-500 file:text-white hover:file:bg-purple-400"
             />
+
+            <label className="flex items-start gap-2 mb-4 text-xs text-slate-300">
+              <input
+                type="checkbox"
+                checked={aceptaTerminos}
+                onChange={(e) => setAceptaTerminos(e.target.checked)}
+                className="w-4 h-4 mt-0.5 accent-purple-500 rounded"
+              />
+              <span>
+                Acepto los{" "}
+                <a href="#" className="text-purple-400 font-semibold hover:text-purple-300">
+                  términos y condiciones
+                </a>
+              </span>
+            </label>
 
             <button
               type="submit"

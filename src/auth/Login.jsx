@@ -13,25 +13,34 @@ export default function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  const manejarEnvio = async (evento) => {
-    evento.preventDefault();
-    setError("");
-    setCargando(true);
+ 
+ 
+ const manejarEnvio = async (evento) => {
+  evento.preventDefault();
+  setError("");
+  setCargando(true);
 
-    try {
-      const response = await axiosClient.post("/auth/login", {
-        correo,
-        password,
-      });
+  try {
+    const response = await axiosClient.post("/auth/login", {
+      correo,
+      password,
+    });
 
-      login(response.data.token);
+    login(response.data.token);
+
+    console.log("ROL RECIBIDO:", response.data.rol);
+
+    if (response.data.rol === "ARTISTA") {
+      navigate("/mi-perfil-artista");
+    } else {
       navigate("/");
-    } catch (err) {
-      setError(err.response?.data?.message || "Credenciales incorrectas");
-    } finally {
-      setCargando(false);
     }
-  };
+  } catch (err) {
+    setError(err.response?.data?.message || "Credenciales incorrectas");
+  } finally {
+    setCargando(false);
+  }
+};
 
   return (
     <div className="h-screen w-full flex bg-[#18151f] overflow-hidden">

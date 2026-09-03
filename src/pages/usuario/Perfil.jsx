@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../auth/AuthContext"; // ajusta la ruta según dónde esté Perfil.jsx
+import { useAuth } from "../../auth/AuthContext";
 import EditarPerfilModal from "./EditarPerfilModal";
 
 const opcionesPerfil = [

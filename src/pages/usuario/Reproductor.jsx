@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { useReproductor } from "../app/ReproductorContext";
+import { useReproductor } from "../../app/ReproductorContext"; // ajusta la ruta según dónde esté Reproductor.jsx
 
 export default function Reproductor() {
   const { cancionActual, reproduciendo, cola, alternarReproduccion, reproducirCancion } = useReproductor();
@@ -23,7 +23,6 @@ export default function Reproductor() {
 
   return (
     <div className="flex-1 overflow-y-auto bg-[#0f0d14] flex flex-col">
-      {/* Barra superior */}
       <div className="relative flex items-center justify-center px-8 pt-6 pb-4">
         <button
           onClick={() => navigate(-1)}
@@ -35,7 +34,6 @@ export default function Reproductor() {
       </div>
 
       <div className="flex-1 flex gap-16 px-8 pb-12">
-        {/* Reproductor principal */}
         <div className="flex-1 flex flex-col items-center justify-center max-w-md mx-auto">
           <div className="w-full aspect-square rounded-2xl bg-gradient-to-br from-purple-400 to-purple-700 flex items-center justify-center mb-8">
             <svg className="w-24 h-24 text-white/80" viewBox="0 0 24 24" fill="currentColor">
@@ -90,7 +88,6 @@ export default function Reproductor() {
           </div>
         </div>
 
-        {/* Cola de reproducción */}
         {mostrarCola && cola.length > 0 && (
           <div className="w-80 shrink-0">
             <div className="flex items-center gap-3 mb-4">

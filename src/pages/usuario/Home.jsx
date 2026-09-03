@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { useAuth } from "../auth/AuthContext";
+import { useAuth } from "../../auth/AuthContext";
 
 const playlistsDestacadas = [
   { nombre: "Éxitos del momento" },

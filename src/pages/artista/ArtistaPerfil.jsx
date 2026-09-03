@@ -1,16 +1,15 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { useAuth } from "../../auth/AuthContext";
 import FormularioAlbum from "./FormularioAlbum";
 import FormularioCancion from "./FormularioCancion";
 import ListaCancionesModal from "./ListaCancionesModal";
 
-
-const artista = {
+const artistaMockPublico = {
   nombre: "Aracely Hernández",
   verificado: true,
   oyentesMensuales: "2.4M",
-  biografia:
-    "nadie suena como ella.",
+  biografia: "nadie suena como ella.",
   fotoUrl: null,
 };
 
@@ -29,7 +28,20 @@ const albumesIniciales = [
 export default function ArtistaPerfil() {
   const navigate = useNavigate();
   const { artistaId } = useParams();
+  const { usuario } = useAuth();
 
+  // Sin artistaId en la URL = viendo el propio perfil (/mi-perfil-artista)
+  const esPerfilPropio = !artistaId;
+
+  const artista = esPerfilPropio
+    ? {
+        nombre: usuario?.nombre || "Artista",
+        verificado: false,
+        oyentesMensuales: "0",
+        biografia: "Aún no has agregado una biografía.",
+        fotoUrl: usuario?.fotoUrl || null,
+      }
+    : artistaMockPublico; // TODO: reemplazar con fetch real por artistaId cuando exista el endpoint
 
   const [cancionesPopulares, setCancionesPopulares] = useState(cancionesIniciales);
   const [albumes, setAlbumes] = useState(albumesIniciales);
@@ -38,27 +50,24 @@ export default function ArtistaPerfil() {
   const [mostrarFormCancion, setMostrarFormCancion] = useState(false);
   const [mostrarListaCanciones, setMostrarListaCanciones] = useState(false);
 
-
-
   const formatearSegundosAString = (segundosTotales) => {
     const mins = Math.floor(segundosTotales / 60);
     const segs = segundosTotales % 60;
     return `${mins}:${segs < 10 ? "0" : ""}${segs}`;
   };
 
-  
   const handleAgregarAlbum = (nuevoAlbum) => {
     const estructuraAlbum = {
-      id: Date.now(), 
+      id: Date.now(),
       nombre: nuevoAlbum.nombre_album,
     };
     setAlbumes([...albumes, estructuraAlbum]);
-    setMostrarFormAlbum(false); 
+    setMostrarFormAlbum(false);
   };
-const handleEliminarCancion = (id) => {
-  setCancionesPopulares(cancionesPopulares.filter((cancion) => cancion.id !== id));
-};
 
+  const handleEliminarCancion = (id) => {
+    setCancionesPopulares(cancionesPopulares.filter((cancion) => cancion.id !== id));
+  };
 
   const handleAgregarCancion = (nuevaCancion) => {
     const estructuraCancion = {
@@ -72,8 +81,7 @@ const handleEliminarCancion = (id) => {
   };
 
   return (
-    <div className="min-h-screen bg-[#0f0b1a] text-white">
-      
+    <div className="min-h-screen bg-[#0f0b1a] text-white flex-1 overflow-y-auto">
       <div className="bg-gradient-to-b from-[#6b4fc7] to-[#2a1f45] px-8 py-10 flex items-end gap-6">
         <div className="w-28 h-28 md:w-32 md:h-32 rounded-full bg-[#3a3155] border-4 border-white/10 flex items-center justify-center flex-shrink-0 overflow-hidden">
           {artista.fotoUrl ? (
@@ -89,7 +97,7 @@ const handleEliminarCancion = (id) => {
 
         <div className="flex flex-col gap-1">
           <span className="text-xs text-[#d9d3ee] tracking-wide">
-            Artista verificado
+            {artista.verificado ? "Artista verificado" : "Artista"}
           </span>
           <h1 className="text-3xl md:text-4xl font-medium flex items-center gap-2">
             {artista.nombre}
@@ -103,47 +111,48 @@ const handleEliminarCancion = (id) => {
         </div>
       </div>
 
-      {/* --- BARRA DE BOTONES --- */}
-      <div className="px-8 pt-5 flex items-center gap-4 flex-wrap">
-        <button
-          type="button"
-          onClick={() => setMostrarFormAlbum(true)}
-          className="border border-[#8b7ee0] text-[#8b7ee0] rounded-full px-5 py-2.5 text-sm font-medium hover:bg-[#8b7ee0]/10 transition-colors flex items-center gap-1.5"
-        >
-          <span>+</span> Agregar album
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setMostrarFormCancion(true)}
-          className="border border-[#8b7ee0] text-[#8b7ee0] rounded-full px-5 py-2.5 text-sm font-medium hover:bg-[#8b7ee0]/10 transition-colors flex items-center gap-1.5"
-        >
-          <span>+</span> Agregar Canción
-        </button>
+      {/* --- BARRA DE BOTONES: solo en el perfil propio --- */}
+      {esPerfilPropio && (
+        <div className="px-8 pt-5 flex items-center gap-4 flex-wrap">
           <button
-        type="button"
-         onClick={() => setMostrarListaCanciones(true)} 
+            type="button"
+            onClick={() => setMostrarFormAlbum(true)}
+            className="border border-[#8b7ee0] text-[#8b7ee0] rounded-full px-5 py-2.5 text-sm font-medium hover:bg-[#8b7ee0]/10 transition-colors flex items-center gap-1.5"
+          >
+            <span>+</span> Agregar album
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setMostrarFormCancion(true)}
+            className="border border-[#8b7ee0] text-[#8b7ee0] rounded-full px-5 py-2.5 text-sm font-medium hover:bg-[#8b7ee0]/10 transition-colors flex items-center gap-1.5"
+          >
+            <span>+</span> Agregar Canción
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setMostrarListaCanciones(true)}
             className="bg-[#8b7ee0] text-[#1a1330] rounded-full px-6 py-2.5 text-sm font-medium flex items-center gap-2 hover:bg-[#9a8ef0] transition-colors"
-           >
-             <IconoPlay className="w-4 h-4" />
-             Mis Canciones
-                     </button>
+          >
+            <IconoPlay className="w-4 h-4" />
+            Mis Canciones
+          </button>
 
-
-        <button
-          type="button"
-          aria-label="Más opciones"
-          className="text-[#b9b3d0] p-2 hover:text-white transition-colors ml-auto"
-        >
-          <IconoPuntos className="w-5 h-5" />
-        </button>
-      </div>
+          <button
+            type="button"
+            aria-label="Más opciones"
+            className="text-[#b9b3d0] p-2 hover:text-white transition-colors ml-auto"
+          >
+            <IconoPuntos className="w-5 h-5" />
+          </button>
+        </div>
+      )}
 
       <p className="px-8 pt-4 pb-6 text-sm text-[#a29cba] max-w-xl leading-relaxed">
         {artista.biografia}
       </p>
 
-      {/* --- SECCIÓN POPULARES --- */}
       <section className="px-8 pb-8">
         <h2 className="text-lg font-medium mb-3">Populares</h2>
         <div className="flex flex-col">
@@ -175,7 +184,6 @@ const handleEliminarCancion = (id) => {
         </div>
       </section>
 
-      {/* --- SECCIÓN ÁLBUMES --- */}
       <section className="px-8 pb-10">
         <h2 className="text-lg font-medium mb-3">Álbumes</h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 max-w-xl">
@@ -193,35 +201,31 @@ const handleEliminarCancion = (id) => {
         </div>
       </section>
 
-      {/* --- INYECCIÓN CONDICIONAL DE FORMULARIOS MODALES --- */}
       {mostrarFormAlbum && (
-        <FormularioAlbum 
-          onAgregar={handleAgregarAlbum} 
-          onCancelar={() => setMostrarFormAlbum(false)} 
+        <FormularioAlbum
+          onAgregar={handleAgregarAlbum}
+          onCancelar={() => setMostrarFormAlbum(false)}
         />
       )}
 
       {mostrarFormCancion && (
-        <FormularioCancion 
-          onAgregar={handleAgregarCancion} 
-          onCancelar={() => setMostrarFormCancion(false)} 
+        <FormularioCancion
+          onAgregar={handleAgregarCancion}
+          onCancelar={() => setMostrarFormCancion(false)}
         />
       )}
-        
-  {mostrarListaCanciones && (
-    <ListaCancionesModal
-      canciones={cancionesPopulares}
-      onEliminar={handleEliminarCancion}
-      onCerrar={() => setMostrarListaCanciones(false)}
-    />
-  )}
-</div> 
 
-    
+      {mostrarListaCanciones && (
+        <ListaCancionesModal
+          canciones={cancionesPopulares}
+          onEliminar={handleEliminarCancion}
+          onCerrar={() => setMostrarListaCanciones(false)}
+        />
+      )}
+    </div>
   );
 }
 
-// --- ICONOS COMPONENTES SVG ---
 function IconoUsuario({ className }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">

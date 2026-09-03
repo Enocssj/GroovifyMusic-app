@@ -4,40 +4,45 @@ const ReproductorContext = createContext(null);
 
 export function ReproductorProvider({ children }) {
   const [cancionActual, setCancionActual] = useState(null);
-  const [reproduciendo, setReproduciendo] = useState(false);
   const [cola, setCola] = useState([]);
+  const [reproduciendo, setReproduciendo] = useState(false);
   const [colaPanelAbierto, setColaPanelAbierto] = useState(false);
 
-  const reproducirCancion = (cancion, colaSiguiente = []) => {
+  const reproducirCancion = (cancion, nuevaCola = []) => {
     setCancionActual(cancion);
-    setCola(colaSiguiente);
+    setCola(nuevaCola);
     setReproduciendo(true);
   };
 
-  const alternarReproduccion = () => setReproduciendo((actual) => !actual);
-  const alternarColaPanel = () => setColaPanelAbierto((actual) => !actual);
+  const alternarReproduccion = () => {
+    setReproduciendo((prev) => !prev);
+  };
+
+  const alternarColaPanel = () => {
+    setColaPanelAbierto((prev) => !prev);
+  };
+
+  const value = {
+    cancionActual,
+    cola,
+    reproduciendo,
+    colaPanelAbierto,
+    reproducirCancion,
+    alternarReproduccion,
+    alternarColaPanel,
+  };
 
   return (
-    <ReproductorContext.Provider
-      value={{
-        cancionActual,
-        reproduciendo,
-        cola,
-        colaPanelAbierto,
-        reproducirCancion,
-        alternarReproduccion,
-        alternarColaPanel,
-      }}
-    >
+    <ReproductorContext.Provider value={value}>
       {children}
     </ReproductorContext.Provider>
   );
 }
 
-export function useReproductor() {
+export const useReproductor = () => {
   const context = useContext(ReproductorContext);
   if (!context) {
     throw new Error("useReproductor debe usarse dentro de un ReproductorProvider");
   }
   return context;
-}
+};

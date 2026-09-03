@@ -2,13 +2,12 @@ import { Navigate } from "react-router-dom";
 import { useAuth } from "./AuthContext";
 
 export default function RutaPublica({ children }) {
-  const { estaAutenticado } = useAuth();
+  const { estaAutenticado, usuario } = useAuth();
 
-  // Si el usuario ya está autenticado, redirigir al home
   if (estaAutenticado) {
-    return <Navigate to="/" replace />;
+    const destino = usuario?.rol === "ARTISTA" ? "/mi-perfil-artista" : "/";
+    return <Navigate to={destino} replace />;
   }
 
-  // Si no está autenticado, mostrar la página pública (login o register)
   return children;
 }

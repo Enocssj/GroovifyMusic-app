@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { useAuth } from "../auth/AuthContext";
+import { useAuth } from "../../auth/AuthContext";
 
 export default function EditarPerfilModal({ abierto, onCerrar }) {
   const { usuario, actualizarUsuario } = useAuth();
