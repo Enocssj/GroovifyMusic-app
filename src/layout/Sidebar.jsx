@@ -7,7 +7,6 @@ const opcionesMenuBase = [
   { etiqueta: "Biblioteca", icono: "pi pi-book", ruta: "/biblioteca" },
 ];
 
-// Empieza vacío - se llenará con las playlists reales del usuario
 const playlists = [];
 
 export default function Sidebar() {

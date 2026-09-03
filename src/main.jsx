@@ -16,4 +16,8 @@ createRoot(document.getElementById("root")).render(
       </ReproductorProvider>
     </AuthProvider>
   </StrictMode>,
+<<<<<<< HEAD
 );
+=======
+)
+>>>>>>> 04d20475eea36708cd782a8d2e7216a1683cb823
