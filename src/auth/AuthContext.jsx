@@ -83,6 +83,7 @@ export function AuthProvider({ children }) {
 // ajusta aquí.
 const mapearPayload = (payload) => {
   return {
+    id: payload.id,
     correo: payload.correo,
     nombre: payload.alias,
     rol: payload.rol,

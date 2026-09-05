@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../../auth/AuthContext";
+import axiosClient from "../../services/axiosClient"; // ajusta la ruta según dónde esté este archivo
 import FormularioAlbum from "./FormularioAlbum";
 import FormularioCancion from "./FormularioCancion";
 import ListaCancionesModal from "./ListaCancionesModal";
@@ -17,12 +18,6 @@ const cancionesIniciales = [
   { id: 1, titulo: "Bajo Neón", reproducciones: "14.8M", duracion: "3:47" },
   { id: 2, titulo: "Ciudad Dormida", reproducciones: "8.3M", duracion: "3:12" },
   { id: 3, titulo: "Espejismo", reproducciones: "5.9M", duracion: "4:01" },
-];
-
-const albumesIniciales = [
-  { id: 1, nombre: "Rock" },
-  { id: 2, nombre: "Banda" },
-  { id: 3, nombre: "Romanticas" },
 ];
 
 export default function ArtistaPerfil() {
@@ -44,11 +39,31 @@ export default function ArtistaPerfil() {
     : artistaMockPublico; // TODO: reemplazar con fetch real por artistaId cuando exista el endpoint
 
   const [cancionesPopulares, setCancionesPopulares] = useState(cancionesIniciales);
-  const [albumes, setAlbumes] = useState(albumesIniciales);
+  const [albumes, setAlbumes] = useState([]);
+  const [cargandoAlbumes, setCargandoAlbumes] = useState(true);
 
   const [mostrarFormAlbum, setMostrarFormAlbum] = useState(false);
   const [mostrarFormCancion, setMostrarFormCancion] = useState(false);
   const [mostrarListaCanciones, setMostrarListaCanciones] = useState(false);
+
+  useEffect(() => {
+    if (!esPerfilPropio || !usuario?.id) {
+      setCargandoAlbumes(false);
+      return;
+    }
+
+    const cargarAlbumes = async () => {
+      try {
+        const response = await axiosClient.get(`/album/artista/${usuario.id}`);
+        setAlbumes(response.data);
+      } catch (err) {
+        console.error("Error al cargar álbumes:", err);
+      } finally {
+        setCargandoAlbumes(false);
+      }
+    };
+    cargarAlbumes();
+  }, [esPerfilPropio, usuario?.id]);
 
   const formatearSegundosAString = (segundosTotales) => {
     const mins = Math.floor(segundosTotales / 60);
@@ -56,12 +71,9 @@ export default function ArtistaPerfil() {
     return `${mins}:${segs < 10 ? "0" : ""}${segs}`;
   };
 
-  const handleAgregarAlbum = (nuevoAlbum) => {
-    const estructuraAlbum = {
-      id: Date.now(),
-      nombre: nuevoAlbum.nombre_album,
-    };
-    setAlbumes([...albumes, estructuraAlbum]);
+  // Recibe el AlbumResponseDTO real que devuelve el backend
+  const handleAlbumCreado = (albumCreado) => {
+    setAlbumes([...albumes, albumCreado]);
     setMostrarFormAlbum(false);
   };
 
@@ -69,12 +81,13 @@ export default function ArtistaPerfil() {
     setCancionesPopulares(cancionesPopulares.filter((cancion) => cancion.id !== id));
   };
 
-  const handleAgregarCancion = (nuevaCancion) => {
+  // Recibe el CancionResponseDTO real que devuelve el backend
+  const handleCancionCreada = (cancionCreada) => {
     const estructuraCancion = {
-      id: Date.now(),
-      titulo: nuevaCancion.nombre,
+      id: cancionCreada.id,
+      titulo: cancionCreada.nombre,
       reproducciones: "0",
-      duracion: formatearSegundosAString(nuevaCancion.duracion_segundos),
+      duracion: formatearSegundosAString(cancionCreada.duracionSegundos),
     };
     setCancionesPopulares([...cancionesPopulares, estructuraCancion]);
     setMostrarFormCancion(false);
@@ -186,31 +199,45 @@ export default function ArtistaPerfil() {
 
       <section className="px-8 pb-10">
         <h2 className="text-lg font-medium mb-3">Álbumes</h2>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 max-w-xl">
-          {albumes.map((album) => (
-            <button
-              key={album.id}
-              type="button"
-              onClick={() => navigate(`/album/${album.id}`)}
-              className="flex flex-col gap-2 text-left group"
-            >
-              <div className="w-full aspect-square rounded-lg bg-gradient-to-br from-[#7a63c9] to-[#3a2d5c] group-hover:opacity-90 transition-opacity" />
-              <span className="text-sm font-medium">{album.nombre}</span>
-            </button>
-          ))}
-        </div>
+        {cargandoAlbumes ? (
+          <p className="text-sm text-[#79738f]">Cargando álbumes...</p>
+        ) : albumes.length === 0 ? (
+          <p className="text-sm text-[#79738f]">Aún no tienes álbumes creados</p>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 max-w-xl">
+            {albumes.map((album) => (
+              <button
+                key={album.id}
+                type="button"
+                onClick={() => navigate(`/album/${album.id}`)}
+                className="flex flex-col gap-2 text-left group"
+              >
+                {album.portada ? (
+                  <img
+                    src={album.portada}
+                    alt={album.nombre}
+                    className="w-full aspect-square rounded-lg object-cover group-hover:opacity-90 transition-opacity"
+                  />
+                ) : (
+                  <div className="w-full aspect-square rounded-lg bg-gradient-to-br from-[#7a63c9] to-[#3a2d5c] group-hover:opacity-90 transition-opacity" />
+                )}
+                <span className="text-sm font-medium">{album.nombre}</span>
+              </button>
+            ))}
+          </div>
+        )}
       </section>
 
       {mostrarFormAlbum && (
         <FormularioAlbum
-          onAgregar={handleAgregarAlbum}
+          onCreado={handleAlbumCreado}
           onCancelar={() => setMostrarFormAlbum(false)}
         />
       )}
 
       {mostrarFormCancion && (
         <FormularioCancion
-          onAgregar={handleAgregarCancion}
+          onCreada={handleCancionCreada}
           onCancelar={() => setMostrarFormCancion(false)}
         />
       )}
