@@ -1,4 +1,5 @@
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
+import { useAuth } from "../auth/AuthContext"; // ajusta la ruta según dónde esté este archivo
 
 const opcionesMenu = [
   { etiqueta: "Mi perfil", icono: "pi pi-user", ruta: "/mi-perfil-artista" },
@@ -6,6 +7,14 @@ const opcionesMenu = [
 ];
 
 export default function SidebarArtista() {
+  const { logout } = useAuth();
+  const navigate = useNavigate();
+
+  const manejarCerrarSesion = () => {
+    logout();
+    navigate("/login");
+  };
+
   return (
     <aside className="w-64 h-screen bg-[#18151f] border-r border-[#2a2635] flex flex-col shrink-0">
       <div className="flex items-center gap-2 px-6 py-6">
@@ -19,7 +28,7 @@ export default function SidebarArtista() {
         PANEL DE ARTISTA
       </p>
 
-      <nav className="px-3">
+      <nav className="px-3 flex-1">
         {opcionesMenu.map((opcion) => (
           <NavLink
             key={opcion.etiqueta}
@@ -37,6 +46,17 @@ export default function SidebarArtista() {
           </NavLink>
         ))}
       </nav>
+
+      <div className="px-3 pb-6">
+        <button
+          type="button"
+          onClick={manejarCerrarSesion}
+          className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-red-400 hover:bg-red-500/10 transition-colors"
+        >
+          <i className="pi pi-sign-out text-base" />
+          Cerrar sesión
+        </button>
+      </div>
     </aside>
   );
 }

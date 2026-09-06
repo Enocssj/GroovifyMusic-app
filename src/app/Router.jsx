@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import AppLayout from "./AppLayout";
 import AppLayoutArtista from "./AppLayoutArtista";
+import AppLayoutSegunRol from "./AppLayoutSegunRol";
 import LoginPage from "../auth/Login";
 import RegisterPage from "../auth/Register";
 import RutaProtegida from "../auth/RutaProtegida";
@@ -24,7 +25,7 @@ export default function Router() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Rutas públicas solo para no autenticados */}
+
         <Route
           path="/login"
           element={
@@ -42,12 +43,11 @@ export default function Router() {
           }
         />
 
-        {/* Layout normal, visible con o sin sesión */}
+        
         <Route element={<AppLayout />}>
-          {/* Home es pública: se puede explorar sin login */}
+         
           <Route path="/" element={<Home />} />
 
-          {/* Todo lo demás sigue exigiendo sesión, ruta por ruta */}
           <Route
             path="/buscar"
             element={
@@ -72,20 +72,12 @@ export default function Router() {
               </RutaProtegida>
             }
           />
-          {/* Perfil público de OTRO artista (vista de solo lectura) */}
+         
           <Route
             path="/artista/:artistaId"
             element={
               <RutaProtegida>
                 <ArtistaPerfil />
-              </RutaProtegida>
-            }
-          />
-          <Route
-            path="/album/:albumId"
-            element={
-              <RutaProtegida>
-                <AlbumDetalle />
               </RutaProtegida>
             }
           />
@@ -115,7 +107,18 @@ export default function Router() {
           />
         </Route>
 
-        {/* Layout de artista: gestión de su propio contenido */}
+       
+        <Route
+          element={
+            <RutaProtegida>
+              <AppLayoutSegunRol />
+            </RutaProtegida>
+          }
+        >
+          <Route path="/album/:albumId" element={<AlbumDetalle />} />
+        </Route>
+
+        
         <Route
           element={
             <RutaProtegida>
@@ -124,7 +127,10 @@ export default function Router() {
           }
         >
           <Route path="/mi-perfil-artista" element={<ArtistaPerfil />} />
-          <Route path="/mi-biblioteca-artista" element={<MiBibliotecaArtista />} />
+          <Route
+            path="/mi-biblioteca-artista"
+            element={<MiBibliotecaArtista />}
+          />
         </Route>
 
         {/* Ruta 404 */}

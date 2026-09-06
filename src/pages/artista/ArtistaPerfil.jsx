@@ -1,57 +1,82 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../../auth/AuthContext";
-import axiosClient from "../../services/axiosClient"; // ajusta la ruta según dónde esté este archivo
+import { useReproductor } from "../../app/ReproductorContext";
+import axiosClient from "../../services/axiosClient";
 import FormularioAlbum from "./FormularioAlbum";
 import FormularioCancion from "./FormularioCancion";
 import ListaCancionesModal from "./ListaCancionesModal";
-
-const artistaMockPublico = {
-  nombre: "Aracely Hernández",
-  verificado: true,
-  oyentesMensuales: "2.4M",
-  biografia: "nadie suena como ella.",
-  fotoUrl: null,
-};
-
-const cancionesIniciales = [
-  { id: 1, titulo: "Bajo Neón", reproducciones: "14.8M", duracion: "3:47" },
-  { id: 2, titulo: "Ciudad Dormida", reproducciones: "8.3M", duracion: "3:12" },
-  { id: 3, titulo: "Espejismo", reproducciones: "5.9M", duracion: "4:01" },
-];
+import EditarPerfilArtistaModal from "./EditarPerfilArtistaModal";
 
 export default function ArtistaPerfil() {
   const navigate = useNavigate();
   const { artistaId } = useParams();
   const { usuario } = useAuth();
+  const { reproducirCancion } = useReproductor();
 
-  // Sin artistaId en la URL = viendo el propio perfil (/mi-perfil-artista)
   const esPerfilPropio = !artistaId;
+  const idAMostrar = esPerfilPropio ? usuario?.id : artistaId;
 
-  const artista = esPerfilPropio
-    ? {
-        nombre: usuario?.nombre || "Artista",
-        verificado: false,
-        oyentesMensuales: "0",
-        biografia: "Aún no has agregado una biografía.",
-        fotoUrl: usuario?.fotoUrl || null,
-      }
-    : artistaMockPublico; // TODO: reemplazar con fetch real por artistaId cuando exista el endpoint
+  const [artista, setArtista] = useState(null);
+  const [cargandoArtista, setCargandoArtista] = useState(true);
 
-  const [cancionesPopulares, setCancionesPopulares] = useState(cancionesIniciales);
+  const [cancionesPopulares, setCancionesPopulares] = useState([]);
+  const [cargandoPopulares, setCargandoPopulares] = useState(true);
+
   const [albumes, setAlbumes] = useState([]);
   const [cargandoAlbumes, setCargandoAlbumes] = useState(true);
 
   const [mostrarFormAlbum, setMostrarFormAlbum] = useState(false);
   const [mostrarFormCancion, setMostrarFormCancion] = useState(false);
   const [mostrarListaCanciones, setMostrarListaCanciones] = useState(false);
+  const [mostrarEditarPerfil, setMostrarEditarPerfil] = useState(false);
+
+  useEffect(() => {
+    if (!idAMostrar) {
+      setCargandoArtista(false);
+      return;
+    }
+    const cargarArtista = async () => {
+      setCargandoArtista(true);
+      try {
+        const response = await axiosClient.get(`/usuarios/${idAMostrar}`);
+        setArtista(response.data);
+      } catch (err) {
+        console.error("Error al cargar el perfil del artista:", err);
+      } finally {
+        setCargandoArtista(false);
+      }
+    };
+    cargarArtista();
+  }, [idAMostrar]);
+
+  useEffect(() => {
+  if (!idAMostrar) {
+    setCargandoPopulares(false);
+    return;
+  }
+  const cargarPopulares = async () => {
+    setCargandoPopulares(true);
+    try {
+      const response = await axiosClient.get(`/canciones/artista/${idAMostrar}/populares`, {
+        params: { limit: 10 },
+      });
+      setCancionesPopulares(response.data);
+    } catch (err) {
+      console.error("Error al cargar canciones populares:", err);
+    } finally {
+      setCargandoPopulares(false);
+    }
+  };
+  cargarPopulares();
+}, [idAMostrar]);
+
 
   useEffect(() => {
     if (!esPerfilPropio || !usuario?.id) {
       setCargandoAlbumes(false);
       return;
     }
-
     const cargarAlbumes = async () => {
       try {
         const response = await axiosClient.get(`/album/artista/${usuario.id}`);
@@ -65,42 +90,83 @@ export default function ArtistaPerfil() {
     cargarAlbumes();
   }, [esPerfilPropio, usuario?.id]);
 
-  const formatearSegundosAString = (segundosTotales) => {
+  const formatearDuracion = (segundosTotales) => {
+    if (!segundosTotales) return "0:00";
     const mins = Math.floor(segundosTotales / 60);
     const segs = segundosTotales % 60;
     return `${mins}:${segs < 10 ? "0" : ""}${segs}`;
   };
 
-  // Recibe el AlbumResponseDTO real que devuelve el backend
   const handleAlbumCreado = (albumCreado) => {
     setAlbumes([...albumes, albumCreado]);
     setMostrarFormAlbum(false);
   };
 
-  const handleEliminarCancion = (id) => {
-    setCancionesPopulares(cancionesPopulares.filter((cancion) => cancion.id !== id));
+  const handleCancionCreada = (cancionCreada) => {
+  setMostrarFormCancion(false);
+  if (idAMostrar) {
+    axiosClient
+      .get(`/canciones/artista/${idAMostrar}/populares`, { params: { limit: 10 } })
+      .then((res) => setCancionesPopulares(res.data))
+      .catch((err) => console.error("Error al refrescar populares:", err));
+  }
+};
+
+
+  const handlePerfilGuardado = (usuarioActualizado) => {
+    setArtista(usuarioActualizado);
   };
 
-  // Recibe el CancionResponseDTO real que devuelve el backend
-  const handleCancionCreada = (cancionCreada) => {
-    const estructuraCancion = {
-      id: cancionCreada.id,
-      titulo: cancionCreada.nombre,
-      reproducciones: "0",
-      duracion: formatearSegundosAString(cancionCreada.duracionSegundos),
-    };
-    setCancionesPopulares([...cancionesPopulares, estructuraCancion]);
-    setMostrarFormCancion(false);
+  const mapearParaReproductor = (cancion) => ({
+    id: cancion.id,
+    titulo: cancion.nombre,
+    artista: artista?.alias,
+    duracion: formatearDuracion(cancion.duracionSegundos),
+    archivoAudio: cancion.archivoAudio,
+    portada: cancion.portada || null,
+  });
+
+  const manejarReproducirDesde = (indice) => {
+    const lista = cancionesPopulares.map(mapearParaReproductor);
+    reproducirCancion(lista[indice], lista.slice(indice + 1));
+    navigate("/reproduciendo");
   };
+
+  if (cargandoArtista) {
+    return (
+      <div className="min-h-screen bg-[#0f0b1a] text-white flex items-center justify-center">
+        <p className="text-[#79738f]">Cargando perfil...</p>
+      </div>
+    );
+  }
+
+  if (!artista) {
+    return (
+      <div className="min-h-screen bg-[#0f0b1a] text-white flex items-center justify-center">
+        <p className="text-[#79738f]">No se pudo cargar este perfil</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#0f0b1a] text-white flex-1 overflow-y-auto">
-      <div className="bg-gradient-to-b from-[#6b4fc7] to-[#2a1f45] px-8 py-10 flex items-end gap-6">
+      <div className="relative bg-gradient-to-b from-[#6b4fc7] to-[#2a1f45] px-8 py-10 flex items-end gap-6">
+        {esPerfilPropio && (
+          <button
+            type="button"
+            onClick={() => setMostrarEditarPerfil(true)}
+            className="absolute top-5 right-8 flex items-center gap-2 border border-white/30 text-white/90 rounded-full px-4 py-2 text-sm font-medium hover:bg-white/10 transition-colors"
+          >
+            <IconoEditar className="w-4 h-4" />
+            Editar perfil
+          </button>
+        )}
+
         <div className="w-28 h-28 md:w-32 md:h-32 rounded-full bg-[#3a3155] border-4 border-white/10 flex items-center justify-center flex-shrink-0 overflow-hidden">
-          {artista.fotoUrl ? (
+          {artista.imagen ? (
             <img
-              src={artista.fotoUrl}
-              alt={`Foto de perfil de ${artista.nombre}`}
+              src={artista.imagen}
+              alt={`Foto de perfil de ${artista.alias}`}
               className="w-full h-full object-cover"
             />
           ) : (
@@ -109,22 +175,13 @@ export default function ArtistaPerfil() {
         </div>
 
         <div className="flex flex-col gap-1">
-          <span className="text-xs text-[#d9d3ee] tracking-wide">
-            {artista.verificado ? "Artista verificado" : "Artista"}
-          </span>
+          <span className="text-xs text-[#d9d3ee] tracking-wide">Artista</span>
           <h1 className="text-3xl md:text-4xl font-medium flex items-center gap-2">
-            {artista.nombre}
-            {artista.verificado && (
-              <IconoVerificado className="w-6 h-6 text-[#8b7ee0]" />
-            )}
+            {artista.alias}
           </h1>
-          <span className="text-sm text-[#c7c1de]">
-            {artista.oyentesMensuales} oyentes mensuales
-          </span>
         </div>
       </div>
 
-      {/* --- BARRA DE BOTONES: solo en el perfil propio --- */}
       {esPerfilPropio && (
         <div className="px-8 pt-5 flex items-center gap-4 flex-wrap">
           <button
@@ -163,7 +220,7 @@ export default function ArtistaPerfil() {
       )}
 
       <p className="px-8 pt-4 pb-6 text-sm text-[#a29cba] max-w-xl leading-relaxed">
-        {artista.biografia}
+        {artista.biografia || "Aún no has agregado una biografía."}
       </p>
 
       <section className="px-8 pb-8">
@@ -176,24 +233,39 @@ export default function ArtistaPerfil() {
             <span className="text-right">Duración</span>
           </div>
 
-          {cancionesPopulares.map((cancion, index) => (
-            <div
-              key={cancion.id}
-              className="grid grid-cols-[24px_1fr_100px_60px] gap-4 px-3 py-3 items-center rounded-md hover:bg-white/5 transition-colors"
-            >
-              <span className="text-[#79738f] text-sm">{index + 1}</span>
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-md bg-[#4a3d78] flex-shrink-0" />
-                <span className="text-sm font-medium">{cancion.titulo}</span>
+          {cargandoPopulares ? (
+            <p className="text-sm text-[#79738f] py-4">Cargando canciones...</p>
+          ) : cancionesPopulares.length === 0 ? (
+            <p className="text-sm text-[#79738f] py-4">Aún no hay canciones</p>
+          ) : (
+            cancionesPopulares.map((cancion, index) => (
+              <div
+                key={cancion.id}
+                onClick={() => manejarReproducirDesde(index)}
+                className="grid grid-cols-[24px_1fr_100px_60px] gap-4 px-3 py-3 items-center rounded-md hover:bg-white/5 transition-colors cursor-pointer"
+              >
+                <span className="text-[#79738f] text-sm">{index + 1}</span>
+                <div className="flex items-center gap-3">
+                  {cancion.portada ? (
+                    <img
+                      src={cancion.portada}
+                      alt={cancion.nombre}
+                      className="w-9 h-9 rounded-md object-cover flex-shrink-0"
+                    />
+                  ) : (
+                    <div className="w-9 h-9 rounded-md bg-[#4a3d78] flex-shrink-0" />
+                  )}
+                  <span className="text-sm font-medium">{cancion.nombre}</span>
+                </div>
+                <span className="text-right text-sm text-[#a29cba]">
+                  {cancion.reproducciones}
+                </span>
+                <span className="text-right text-sm text-[#a29cba]">
+                  {formatearDuracion(cancion.duracionSegundos)}
+                </span>
               </div>
-              <span className="text-right text-sm text-[#a29cba]">
-                {cancion.reproducciones}
-              </span>
-              <span className="text-right text-sm text-[#a29cba]">
-                {cancion.duracion}
-              </span>
-            </div>
-          ))}
+            ))
+          )}
         </div>
       </section>
 
@@ -202,7 +274,9 @@ export default function ArtistaPerfil() {
         {cargandoAlbumes ? (
           <p className="text-sm text-[#79738f]">Cargando álbumes...</p>
         ) : albumes.length === 0 ? (
-          <p className="text-sm text-[#79738f]">Aún no tienes álbumes creados</p>
+          <p className="text-sm text-[#79738f]">
+            Aún no tienes álbumes creados
+          </p>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 max-w-xl">
             {albumes.map((album) => (
@@ -244,36 +318,80 @@ export default function ArtistaPerfil() {
 
       {mostrarListaCanciones && (
         <ListaCancionesModal
-          canciones={cancionesPopulares}
-          onEliminar={handleEliminarCancion}
+          canciones={cancionesPopulares.map((c) => ({
+            id: c.id,
+            titulo: c.nombre,
+            duracion: formatearDuracion(c.duracionSegundos),
+            portadaUrl: c.portada,
+          }))}
+          onEliminar={() => {}}
           onCerrar={() => setMostrarListaCanciones(false)}
+        />
+      )}
+
+      {mostrarEditarPerfil && (
+        <EditarPerfilArtistaModal
+          onGuardado={handlePerfilGuardado}
+          onCancelar={() => setMostrarEditarPerfil(false)}
         />
       )}
     </div>
   );
 }
 
-function IconoUsuario({ className }) {
+function IconoEditar({ className }) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
-      <circle cx="12" cy="8" r="4" fill="currentColor" />
-      <path d="M4 20c0-4 3.6-6 8-6s8 2 8 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      className={className}
+      aria-hidden="true"
+    >
+      <path
+        d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }
 
-function IconoVerificado({ className }) {
+function IconoUsuario({ className }) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
-      <path d="M12 2l2.4 1.4 2.8-.3 1.1 2.6 2.6 1.1-.3 2.8L22 12l-1.4 2.4.3 2.8-2.6 1.1-1.1 2.6-2.8-.3L12 22l-2.4-1.4-2.8.3-1.1-2.6-2.6-1.1.3-2.8L2 12l1.4-2.4-.3-2.8 2.6-1.1L6.8 3.1l2.8.3L12 2z" fill="currentColor" />
-      <path d="M9 12l2 2 4-4" stroke="#1a1330" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      className={className}
+      aria-hidden="true"
+    >
+      <circle cx="12" cy="8" r="4" fill="currentColor" />
+      <path
+        d="M4 20c0-4 3.6-6 8-6s8 2 8 6"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
     </svg>
   );
 }
 
 function IconoPlay({ className }) {
   return (
-    <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden="true">
+    <svg
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      className={className}
+      aria-hidden="true"
+    >
       <path d="M8 5v14l11-7z" />
     </svg>
   );
@@ -281,7 +399,12 @@ function IconoPlay({ className }) {
 
 function IconoPuntos({ className }) {
   return (
-    <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden="true">
+    <svg
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      className={className}
+      aria-hidden="true"
+    >
       <circle cx="5" cy="12" r="2" />
       <circle cx="12" cy="12" r="2" />
       <circle cx="19" cy="12" r="2" />

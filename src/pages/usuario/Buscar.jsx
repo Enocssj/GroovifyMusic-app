@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import axiosClient from "../../services/axiosClient";
+import { useReproductor } from "../../app/ReproductorContext"; // ajusta la ruta según dónde esté este archivo
 
 const generos = [
   { nombre: "Pop", color: "from-purple-500 to-purple-700" },
@@ -8,41 +10,70 @@ const generos = [
   { nombre: "Reggaetón", color: "from-yellow-600 to-yellow-800" },
 ];
 
-// Datos de ejemplo mientras no hay resultados reales del backend
-const artistasDisponibles = [{ id: "kira-luz", nombre: "Kira Luz" }];
-
-const albumesDisponibles = [
-  { id: "nocturno", nombre: "Nocturno", artista: "Kira Luz" },
-  { id: "neon", nombre: "Neón", artista: "Kira Luz" },
-  { id: "ecos", nombre: "Ecos", artista: "Kira Luz" },
-];
-
 export default function Buscar() {
   const [busqueda, setBusqueda] = useState("");
   const [resultados, setResultados] = useState(null);
+  const [buscando, setBuscando] = useState(false);
   const navigate = useNavigate();
+  const { reproducirCancion } = useReproductor();
 
-  const manejarBusqueda = (evento) => {
+  const manejarBusqueda = async (evento) => {
     evento.preventDefault();
-    const termino = busqueda.trim().toLowerCase();
+    const termino = busqueda.trim();
 
     if (!termino) {
       setResultados(null);
       return;
     }
 
-    const artistas = artistasDisponibles.filter((artista) =>
-      artista.nombre.toLowerCase().includes(termino)
-    );
-    const albumes = albumesDisponibles.filter((album) =>
-      album.nombre.toLowerCase().includes(termino)
-    );
+    setBuscando(true);
+    try {
+      const [artistasRes, albumesRes, cancionesRes] = await Promise.all([
+        axiosClient.get(`/usuarios/search`, { params: { alias: termino } }),
+        axiosClient.get(`/album/search`, { params: { nombre: termino } }),
+        axiosClient.post(`/canciones/search`, { nombre: termino }),
+      ]);
 
-    setResultados({ artistas, albumes });
+      setResultados({
+        artistas: artistasRes.data,
+        albumes: albumesRes.data,
+        canciones: cancionesRes.data,
+      });
+    } catch (err) {
+      console.error("Error al buscar:", err);
+      setResultados({ artistas: [], albumes: [], canciones: [] });
+    } finally {
+      setBuscando(false);
+    }
   };
 
   const sinResultados =
-    resultados && resultados.artistas.length === 0 && resultados.albumes.length === 0;
+    resultados &&
+    resultados.artistas.length === 0 &&
+    resultados.albumes.length === 0 &&
+    resultados.canciones.length === 0;
+
+  const formatearDuracion = (segundosTotales) => {
+    if (!segundosTotales) return "0:00";
+    const mins = Math.floor(segundosTotales / 60);
+    const segs = segundosTotales % 60;
+    return `${mins}:${segs < 10 ? "0" : ""}${segs}`;
+  };
+
+  const mapearParaReproductor = (cancion) => ({
+    id: cancion.id,
+    titulo: cancion.nombre,
+    artista: cancion.artista?.alias,
+    duracion: formatearDuracion(cancion.duracionSegundos),
+    archivoAudio: cancion.archivoAudio,
+    portada: cancion.portada || cancion.album?.portada || null,
+  });
+
+  const manejarReproducirCancion = (indice) => {
+    const lista = resultados.canciones.map(mapearParaReproductor);
+    reproducirCancion(lista[indice], lista.slice(indice + 1));
+    navigate("/reproduciendo");
+  };
 
   return (
     <div className="flex-1 overflow-y-auto bg-[#0f0d14]">
@@ -60,7 +91,9 @@ export default function Buscar() {
           />
         </form>
 
-        {resultados === null ? (
+        {buscando ? (
+          <p className="text-center text-slate-400">Buscando...</p>
+        ) : resultados === null ? (
           <>
             <h2 className="text-lg font-bold text-white mb-4">Explorar géneros</h2>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
@@ -93,8 +126,16 @@ export default function Buscar() {
                       onClick={() => navigate(`/artista/${artista.id}`)}
                       className="cursor-pointer group text-center"
                     >
-                      <div className="aspect-square rounded-full bg-gradient-to-br from-purple-400 to-purple-600 mb-3 group-hover:opacity-90 transition-opacity" />
-                      <p className="text-white font-semibold">{artista.nombre}</p>
+                      {artista.imagen ? (
+                        <img
+                          src={artista.imagen}
+                          alt={artista.alias}
+                          className="aspect-square rounded-full object-cover mb-3 group-hover:opacity-90 transition-opacity"
+                        />
+                      ) : (
+                        <div className="aspect-square rounded-full bg-gradient-to-br from-purple-400 to-purple-600 mb-3 group-hover:opacity-90 transition-opacity" />
+                      )}
+                      <p className="text-white font-semibold">{artista.alias}</p>
                       <p className="text-slate-500 text-sm">Artista</p>
                     </div>
                   ))}
@@ -103,7 +144,7 @@ export default function Buscar() {
             )}
 
             {resultados.albumes.length > 0 && (
-              <div>
+              <div className="mb-10">
                 <h2 className="text-lg font-bold text-white mb-4">Álbumes</h2>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
                   {resultados.albumes.map((album) => (
@@ -112,10 +153,51 @@ export default function Buscar() {
                       onClick={() => navigate(`/album/${album.id}`)}
                       className="cursor-pointer group"
                     >
-                      <div className="aspect-square rounded-xl bg-gradient-to-br from-purple-400 to-purple-700 flex items-end p-4 group-hover:opacity-90 transition-opacity">
-                        <span className="text-white font-semibold">{album.nombre}</span>
+                      {album.portada ? (
+                        <img
+                          src={album.portada}
+                          alt={album.nombre}
+                          className="aspect-square w-full rounded-xl object-cover group-hover:opacity-90 transition-opacity"
+                        />
+                      ) : (
+                        <div className="aspect-square rounded-xl bg-gradient-to-br from-purple-400 to-purple-700 flex items-end p-4 group-hover:opacity-90 transition-opacity">
+                          <span className="text-white font-semibold">{album.nombre}</span>
+                        </div>
+                      )}
+                      <p className="text-white font-semibold mt-2">{album.nombre}</p>
+                      <p className="text-slate-500 text-sm">{album.artista?.alias}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {resultados.canciones.length > 0 && (
+              <div>
+                <h2 className="text-lg font-bold text-white mb-4">Canciones</h2>
+                <div className="flex flex-col">
+                  {resultados.canciones.map((cancion, indice) => (
+                    <div
+                      key={cancion.id}
+                      onClick={() => manejarReproducirCancion(indice)}
+                      className="flex items-center gap-4 px-3 py-2.5 rounded-md hover:bg-white/5 transition-colors cursor-pointer"
+                    >
+                      {cancion.portada ? (
+                        <img
+                          src={cancion.portada}
+                          alt={cancion.nombre}
+                          className="w-11 h-11 rounded-md object-cover shrink-0"
+                        />
+                      ) : (
+                        <div className="w-11 h-11 rounded-md bg-gradient-to-br from-purple-400 to-purple-600 shrink-0" />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-white text-sm font-medium truncate">{cancion.nombre}</p>
+                        <p className="text-slate-500 text-xs truncate">{cancion.artista?.alias}</p>
                       </div>
-                      <p className="text-slate-500 text-sm mt-2">{album.artista}</p>
+                      <span className="text-slate-500 text-xs shrink-0">
+                        {formatearDuracion(cancion.duracionSegundos)}
+                      </span>
                     </div>
                   ))}
                 </div>
