@@ -1,21 +1,78 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import NuevaPlaylistModal from "./NuevaPlaylistModal";
+import axiosClient from "../../services/axiosClient";
 
 export default function Biblioteca() {
   const [tabActiva, setTabActiva] = useState("playlists");
   const [modalAbierto, setModalAbierto] = useState(false);
   const navigate = useNavigate();
 
-  // Playlists creadas por el usuario en esta sesión (se conecta al backend después)
   const [misPlaylists, setMisPlaylists] = useState([]);
+  const [cargandoPlaylists, setCargandoPlaylists] = useState(true);
 
-  // Se llenarán con datos reales cuando se conecte el backend
+  const [totalMeGusta, setTotalMeGusta] = useState(0);
+  const [cargandoMeGusta, setCargandoMeGusta] = useState(true);
+
   const artistasSeguidos = [];
   const albumesGuardados = [];
 
-  const manejarCrearPlaylist = (nuevaPlaylist) => {
-    setMisPlaylists((actuales) => [...actuales, nuevaPlaylist]);
+  useEffect(() => {
+    const cargarPlaylists = async () => {
+      try {
+        const response = await axiosClient.get("/playlists/mis-playlists");
+
+        const soloPersonales = response.data.filter(
+          (p) => p.tipo === "PERSONAL"
+        );
+        setMisPlaylists(soloPersonales);
+      } catch (err) {
+        console.error("Error al cargar playlists:", err);
+      } finally {
+        setCargandoPlaylists(false);
+      }
+    };
+    cargarPlaylists();
+  }, []);
+
+  useEffect(() => {
+    const cargarMeGusta = async () => {
+      try {
+        const response = await axiosClient.get("/playlists/me-gusta");
+        setTotalMeGusta(response.data.length);
+      } catch (err) {
+        console.error("Error al cargar tus me gusta:", err);
+      } finally {
+        setCargandoMeGusta(false);
+      }
+    };
+    cargarMeGusta();
+  }, []);
+
+  const manejarCrearPlaylist = async (nuevaPlaylist) => {
+    try {
+      const playlistData = {
+        nombre: nuevaPlaylist.nombre,
+        descripcion: nuevaPlaylist.descripcion || null,
+        portada: null,
+      };
+
+      const playlistBlob = new Blob([JSON.stringify(playlistData)], {
+        type: "application/json",
+      });
+
+      const formData = new FormData();
+      formData.append("playlist", playlistBlob);
+
+      if (nuevaPlaylist.portada) {
+        formData.append("portada", nuevaPlaylist.portada);
+      }
+
+      const response = await axiosClient.post("/playlists", formData);
+      setMisPlaylists((actuales) => [...actuales, response.data]);
+    } catch (err) {
+      console.error("Error al crear playlist:", err);
+    }
   };
 
   const tabs = [
@@ -38,7 +95,6 @@ export default function Biblioteca() {
           </button>
         </div>
 
-        {/* Tabs */}
         <div className="flex gap-3 mb-8">
           {tabs.map((tab) => (
             <button
@@ -55,10 +111,8 @@ export default function Biblioteca() {
           ))}
         </div>
 
-        {/* Contenido: Playlists */}
         {tabActiva === "playlists" && (
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
-            {/* Playlist fija: Tus me gusta */}
             <div
               onClick={() => navigate("/biblioteca/tus-me-gusta")}
               className="cursor-pointer group"
@@ -67,33 +121,42 @@ export default function Biblioteca() {
                 <i className="pi pi-heart-fill text-white text-4xl" />
               </div>
               <p className="text-white font-semibold">Tus me gusta</p>
-              <p className="text-slate-500 text-sm">0 canciones</p>
+              <p className="text-slate-500 text-sm">
+                {cargandoMeGusta ? "..." : `${totalMeGusta} canciones`}
+              </p>
             </div>
 
-            {/* Playlists creadas por el usuario */}
-            {misPlaylists.map((playlist, indice) => (
-              <div key={`${playlist.nombre}-${indice}`} className="cursor-pointer group">
-                {playlist.portada ? (
-                  <img
-                    src={playlist.portada}
-                    alt={playlist.nombre}
-                    className="aspect-square w-full rounded-xl object-cover mb-3 group-hover:opacity-90 transition-opacity"
-                  />
-                ) : (
-                  <div className="aspect-square rounded-xl bg-gradient-to-br from-purple-400 to-purple-700 flex items-end p-4 mb-3 group-hover:opacity-90 transition-opacity">
-                    <span className="text-white font-semibold">{playlist.nombre}</span>
-                  </div>
-                )}
-                {playlist.portada && (
+            {cargandoPlaylists ? (
+              <p className="text-sm text-slate-500 col-span-full">
+                Cargando playlists...
+              </p>
+            ) : (
+              misPlaylists.map((playlist) => (
+                <div
+                  key={playlist.id}
+                  onClick={() => navigate(`/playlist/${playlist.id}`)}
+                  className="cursor-pointer group"
+                >
+                  {playlist.portada ? (
+                    <img
+                      src={playlist.portada}
+                      alt={playlist.nombre}
+                      className="aspect-square w-full rounded-xl object-cover mb-3 group-hover:opacity-90 transition-opacity"
+                    />
+                  ) : (
+                    <div className="aspect-square rounded-xl bg-gradient-to-br from-purple-400 to-purple-700 flex items-end p-4 mb-3 group-hover:opacity-90 transition-opacity">
+                      <span className="text-white font-semibold">
+                        {playlist.nombre}
+                      </span>
+                    </div>
+                  )}
                   <p className="text-white font-semibold">{playlist.nombre}</p>
-                )}
-                <p className="text-slate-500 text-sm">{playlist.cancionesTexto}</p>
-              </div>
-            ))}
+                </div>
+              ))
+            )}
           </div>
         )}
 
-        {/* Contenido: Artistas */}
         {tabActiva === "artistas" && (
           <>
             {artistasSeguidos.length === 0 ? (
@@ -104,7 +167,10 @@ export default function Biblioteca() {
             ) : (
               <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
                 {artistasSeguidos.map((artista) => (
-                  <div key={artista.nombre} className="cursor-pointer group text-center">
+                  <div
+                    key={artista.nombre}
+                    className="cursor-pointer group text-center"
+                  >
                     <div className="aspect-square rounded-full bg-gradient-to-br from-purple-400 to-purple-700 mb-3 group-hover:opacity-90 transition-opacity" />
                     <p className="text-white font-semibold">{artista.nombre}</p>
                   </div>
@@ -114,13 +180,14 @@ export default function Biblioteca() {
           </>
         )}
 
-        {/* Contenido: Álbumes */}
         {tabActiva === "albumes" && (
           <>
             {albumesGuardados.length === 0 ? (
               <div className="text-center py-16">
                 <i className="pi pi-book text-slate-600 text-4xl mb-4" />
-                <p className="text-slate-400">Aún no tienes álbumes guardados</p>
+                <p className="text-slate-400">
+                  Aún no tienes álbumes guardados
+                </p>
               </div>
             ) : (
               <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">

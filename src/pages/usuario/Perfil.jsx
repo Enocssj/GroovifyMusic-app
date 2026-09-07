@@ -28,17 +28,6 @@ export default function Perfil() {
       {/* Barra superior */}
       <div className="flex items-center justify-between px-8 pt-6">
         <h1 className="text-3xl font-bold text-white">Perfil</h1>
-        {usuario?.fotoUrl ? (
-          <img
-            src={usuario.fotoUrl}
-            alt="Foto de perfil"
-            className="w-9 h-9 rounded-full object-cover"
-          />
-        ) : (
-          <button className="w-9 h-9 rounded-full bg-purple-500 flex items-center justify-center text-white">
-            <i className="pi pi-user" />
-          </button>
-        )}
       </div>
 
       <div className="px-8 pt-8 max-w-2xl mx-auto">

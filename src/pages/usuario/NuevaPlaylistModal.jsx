@@ -4,7 +4,8 @@ export default function NuevaPlaylistModal({ abierto, onCerrar, onCrear }) {
   const inputPortadaRef = useRef(null);
 
   const [nombre, setNombre] = useState("");
-  const [portada, setPortada] = useState(null);
+  const [portadaPreview, setPortadaPreview] = useState(null);
+  const [portadaArchivo, setPortadaArchivo] = useState(null);
   const [privada, setPrivada] = useState(true);
   const [colaborativa, setColaborativa] = useState(false);
 
@@ -13,14 +14,15 @@ export default function NuevaPlaylistModal({ abierto, onCerrar, onCrear }) {
   const manejarSeleccionPortada = (evento) => {
     const archivo = evento.target.files[0];
     if (!archivo) return;
-    const lector = new FileReader();
-    lector.onload = () => setPortada(lector.result);
-    lector.readAsDataURL(archivo);
+    
+    setPortadaArchivo(archivo); // Guardar el objeto File binario
+    setPortadaPreview(URL.createObjectURL(archivo)); // Generar vista previa temporal
   };
 
   const reiniciarFormulario = () => {
     setNombre("");
-    setPortada(null);
+    setPortadaPreview(null);
+    setPortadaArchivo(null);
     setPrivada(true);
     setColaborativa(false);
   };
@@ -32,10 +34,9 @@ export default function NuevaPlaylistModal({ abierto, onCerrar, onCrear }) {
 
   const manejarCrear = (evento) => {
     evento.preventDefault();
-    // Conexión real con el backend se agrega después.
     onCrear({
       nombre: nombre.trim() || "Mi playlist #1",
-      portada,
+      portada: portadaArchivo, // Enviamos la instancia File real
       privada,
       colaborativa,
       cancionesTexto: "0 canciones",
@@ -69,8 +70,8 @@ export default function NuevaPlaylistModal({ abierto, onCerrar, onCrear }) {
               onClick={() => inputPortadaRef.current?.click()}
               className="w-44 h-44 rounded-xl border-2 border-dashed border-[#3a3550] flex items-center justify-center hover:border-purple-500 transition-colors overflow-hidden"
             >
-              {portada ? (
-                <img src={portada} alt="Portada" className="w-full h-full object-cover" />
+              {portadaPreview ? (
+                <img src={portadaPreview} alt="Portada" className="w-full h-full object-cover" />
               ) : (
                 <i className="pi pi-camera text-slate-500 text-3xl" />
               )}

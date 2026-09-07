@@ -9,7 +9,7 @@ import RutaPublica from "../auth/RutaPublica";
 
 // Vistas de usuario
 import Home from "../pages/usuario/Home";
-import Buscar from "../pages/usuario/Buscar";
+
 import Biblioteca from "../pages/usuario/Biblioteca";
 import TusMeGusta from "../pages/usuario/TusMeGusta";
 import AlbumDetalle from "../pages/usuario/AlbumDetalle";
@@ -20,6 +20,7 @@ import Configuracion from "../pages/usuario/Configuracion";
 // Vistas de artista
 import ArtistaPerfil from "../pages/artista/ArtistaPerfil";
 import MiBibliotecaArtista from "../pages/artista/MiBibliotecaArtista";
+import PlaylistDetalle from "../pages/usuario/PlaylistDetalle";
 
 export default function Router() {
   return (
@@ -48,14 +49,7 @@ export default function Router() {
          
           <Route path="/" element={<Home />} />
 
-          <Route
-            path="/buscar"
-            element={
-              <RutaProtegida>
-                <Buscar />
-              </RutaProtegida>
-            }
-          />
+        
           <Route
             path="/biblioteca"
             element={
@@ -116,6 +110,7 @@ export default function Router() {
           }
         >
           <Route path="/album/:albumId" element={<AlbumDetalle />} />
+          <Route path="/playlist/:playlistId" element={<PlaylistDetalle />} />
         </Route>
 
         
