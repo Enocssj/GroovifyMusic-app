@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useReproductor } from "../../app/ReproductorContext";
+import axiosClient from "../../services/axiosClient"; // ajusta la ruta según dónde esté este archivo
 
 const formatearTiempo = (segundos) => {
   if (!segundos || isNaN(segundos)) return "0:00";
@@ -25,6 +26,42 @@ export default function Reproductor() {
   const navigate = useNavigate();
   const location = useLocation();
   const [mostrarCola, setMostrarCola] = useState(!!location.state?.abrirCola);
+  const [esFavorita, setEsFavorita] = useState(false);
+
+  const [misPlaylists, setMisPlaylists] = useState([]);
+  const [cargandoPlaylists, setCargandoPlaylists] = useState(true);
+  const [mostrarSelectorPlaylist, setMostrarSelectorPlaylist] = useState(false);
+  const [mensajeAgregado, setMensajeAgregado] = useState("");
+
+  useEffect(() => {
+    if (!cancionActual?.id) {
+      setEsFavorita(false);
+      return;
+    }
+    const verificarMeGusta = async () => {
+      try {
+        const response = await axiosClient.get(`/playlists/me-gusta/existe/${cancionActual.id}`);
+        setEsFavorita(response.data);
+      } catch (err) {
+        console.error("Error al verificar me gusta:", err);
+      }
+    };
+    verificarMeGusta();
+  }, [cancionActual?.id]);
+
+  useEffect(() => {
+    const cargarPlaylists = async () => {
+      try {
+        const response = await axiosClient.get("/playlists/mis-playlists");
+        setMisPlaylists(response.data.filter((p) => p.tipo === "PERSONAL"));
+      } catch (err) {
+        console.error("Error al cargar tus playlists:", err);
+      } finally {
+        setCargandoPlaylists(false);
+      }
+    };
+    cargarPlaylists();
+  }, []);
 
   if (!cancionActual) {
     return (
@@ -44,6 +81,29 @@ export default function Reproductor() {
     buscarEnTiempo(ratio * duracionAudio);
   };
 
+  const alternarMeGusta = async () => {
+    try {
+      const response = await axiosClient.post(`/playlists/me-gusta/toggle/${cancionActual.id}`);
+      setEsFavorita(response.data.agregado);
+    } catch (err) {
+      console.error("Error al actualizar me gusta:", err);
+    }
+  };
+
+  const agregarAPlaylist = async (playlistId, nombrePlaylist) => {
+    try {
+      await axiosClient.post(`/playlists/${playlistId}/canciones/${cancionActual.id}`);
+      setMensajeAgregado(`Agregada a "${nombrePlaylist}"`);
+      setTimeout(() => setMensajeAgregado(""), 2000);
+    } catch (err) {
+      console.error("Error al agregar a la playlist:", err);
+      setMensajeAgregado("No se pudo agregar");
+      setTimeout(() => setMensajeAgregado(""), 2000);
+    } finally {
+      setMostrarSelectorPlaylist(false);
+    }
+  };
+
   return (
     <div className="flex-1 overflow-y-auto bg-[#0f0d14] flex flex-col">
       <div className="relative flex items-center justify-center px-8 pt-6 pb-4">
@@ -54,7 +114,52 @@ export default function Reproductor() {
           <i className="pi pi-chevron-left" />
         </button>
         <p className="text-sm text-slate-400">Reproduciendo desde playlist</p>
+
+        <div className="absolute right-8">
+          <button
+            onClick={() => setMostrarSelectorPlaylist(!mostrarSelectorPlaylist)}
+            className="w-9 h-9 rounded-full bg-[#221f2e] hover:bg-[#2a273a] flex items-center justify-center text-white transition-colors"
+            title="Agregar a playlist"
+          >
+            <i className="pi pi-plus" />
+          </button>
+
+          {mostrarSelectorPlaylist && (
+            <div className="absolute right-0 mt-2 w-64 bg-[#221f2e] border border-[#3a3550] rounded-lg shadow-xl z-10 overflow-hidden">
+              <p className="text-xs font-semibold text-slate-400 px-4 pt-3 pb-2">
+                Agregar a playlist
+              </p>
+              <div className="max-h-56 overflow-y-auto">
+                {cargandoPlaylists ? (
+                  <p className="text-xs text-slate-500 px-4 py-3">Cargando...</p>
+                ) : misPlaylists.length === 0 ? (
+                  <p className="text-xs text-slate-500 px-4 py-3">
+                    Aún no tienes playlists creadas
+                  </p>
+                ) : (
+                  misPlaylists.map((playlist) => (
+                    <button
+                      key={playlist.id}
+                      onClick={() => agregarAPlaylist(playlist.id, playlist.nombre)}
+                      className="w-full text-left px-4 py-2.5 text-sm text-white hover:bg-[#2a273a] transition-colors truncate"
+                    >
+                      {playlist.nombre}
+                    </button>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
+
+      {mensajeAgregado && (
+        <div className="text-center mb-2">
+          <span className="text-xs text-purple-400 bg-purple-500/10 px-3 py-1 rounded-full">
+            {mensajeAgregado}
+          </span>
+        </div>
+      )}
 
       <div className="flex-1 flex gap-16 px-8 pb-12">
         <div className="flex-1 flex flex-col items-center justify-center max-w-md mx-auto">
@@ -136,6 +241,18 @@ export default function Reproductor() {
             ) : (
               <span className="w-[18px]" />
             )}
+
+            <button
+              onClick={alternarMeGusta}
+              className="text-slate-400 hover:text-purple-400 transition-colors ml-4 pl-4 border-l border-[#2a2635]"
+              title={esFavorita ? "Quitar de tus me gusta" : "Guardar en tus me gusta"}
+            >
+              <i
+                className={`pi ${
+                  esFavorita ? "pi-heart-fill text-purple-500" : "pi-heart"
+                } text-lg`}
+              />
+            </button>
           </div>
         </div>
 

@@ -22,6 +22,11 @@ export default function FormularioCancion({ onCreada, onCancelar, albumIdFijo })
   const [albumId, setAlbumId] = useState("");
   const [cargandoAlbumes, setCargandoAlbumes] = useState(true);
 
+  const [playlistsDestacadas, setPlaylistsDestacadas] = useState([]);
+  const [playlistsSeleccionadas, setPlaylistsSeleccionadas] = useState([]);
+  const [mostrarPlaylists, setMostrarPlaylists] = useState(false);
+  const [cargandoPlaylists, setCargandoPlaylists] = useState(true);
+
   const [error, setError] = useState("");
   const [enviando, setEnviando] = useState(false);
 
@@ -60,9 +65,29 @@ export default function FormularioCancion({ onCreada, onCancelar, albumIdFijo })
     cargarAlbumes();
   }, [usuario?.id, albumIdFijo]);
 
+  useEffect(() => {
+    const cargarPlaylists = async () => {
+      try {
+        const response = await axiosClient.get("/playlists/destacadas");
+        setPlaylistsDestacadas(response.data);
+      } catch (err) {
+        console.error("Error al cargar playlists destacadas:", err);
+      } finally {
+        setCargandoPlaylists(false);
+      }
+    };
+    cargarPlaylists();
+  }, []);
+
   const alternarGenero = (id) => {
     setGenerosSeleccionados((prev) =>
       prev.includes(id) ? prev.filter((g) => g !== id) : [...prev, id]
+    );
+  };
+
+  const alternarPlaylist = (id) => {
+    setPlaylistsSeleccionadas((prev) =>
+      prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id]
     );
   };
 
@@ -119,10 +144,21 @@ export default function FormularioCancion({ onCreada, onCancelar, albumIdFijo })
       formData.append("archivoAudio", archivoAudio);
 
       const response = await axiosClient.post("/canciones/register", formData);
+      const cancionCreada = response.data;
 
-      onCreada?.(response.data);
+      // Agregar la canción recién creada a cada playlist destacada marcada.
+      // Se hace una petición por playlist; si alguna falla, no bloquea el resto.
+      if (playlistsSeleccionadas.length > 0) {
+        await Promise.allSettled(
+          playlistsSeleccionadas.map((playlistId) =>
+            axiosClient.post(`/playlists/${playlistId}/canciones/${cancionCreada.id}`)
+          )
+        );
+      }
 
-     
+      onCreada?.(cancionCreada);
+
+      // Limpiar formulario
       setNombre("");
       setFechaLanzamiento("");
       setArchivoPortada(null);
@@ -131,6 +167,7 @@ export default function FormularioCancion({ onCreada, onCancelar, albumIdFijo })
       setNombreAudio("");
       setGenerosSeleccionados([]);
       setAlbumId("");
+      setPlaylistsSeleccionadas([]);
       onCancelar();
     } catch (err) {
       console.error("Error al registrar canción:", err);
@@ -207,7 +244,6 @@ export default function FormularioCancion({ onCreada, onCancelar, albumIdFijo })
           />
         </div>
 
-
         {!albumIdFijo && (
           <div className="flex flex-col gap-1">
             <label className="text-xs text-[#a29cba]">
@@ -275,6 +311,51 @@ export default function FormularioCancion({ onCreada, onCancelar, albumIdFijo })
                       className="w-4 h-4 accent-[#8b7ee0] rounded"
                     />
                     <span className="text-sm text-white">{genero.nombre}</span>
+                  </label>
+                ))
+              )}
+            </div>
+          )}
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <label className="text-xs text-[#a29cba]">
+            Agregar a playlist destacada <span className="text-[#79738f]">(opcional)</span>
+          </label>
+          <button
+            type="button"
+            onClick={() => setMostrarPlaylists(!mostrarPlaylists)}
+            className="bg-[#0f0b1a] border border-[#2a2440] rounded-xl px-4 py-2.5 text-sm text-left flex items-center justify-between focus:outline-none focus:border-[#8b7ee0]"
+          >
+            <span className={playlistsSeleccionadas.length ? "text-white" : "text-[#4a4368]"}>
+              {playlistsSeleccionadas.length > 0
+                ? `${playlistsSeleccionadas.length} playlist(s) seleccionada(s)`
+                : "Selecciona una o más playlists"}
+            </span>
+            <IconoFlechaAbajo
+              className={`w-4 h-4 text-[#79738f] transition-transform ${mostrarPlaylists ? "rotate-180" : ""}`}
+            />
+          </button>
+
+          {mostrarPlaylists && (
+            <div className="mt-1 border border-[#2a2440] rounded-xl bg-[#0f0b1a] max-h-48 overflow-y-auto p-2 flex flex-col gap-1">
+              {cargandoPlaylists ? (
+                <p className="text-xs text-[#79738f] text-center py-2">Cargando playlists...</p>
+              ) : playlistsDestacadas.length === 0 ? (
+                <p className="text-xs text-[#79738f] text-center py-2">No hay playlists disponibles</p>
+              ) : (
+                playlistsDestacadas.map((playlist) => (
+                  <label
+                    key={playlist.id}
+                    className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-[#1a1330] cursor-pointer transition-colors"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={playlistsSeleccionadas.includes(playlist.id)}
+                      onChange={() => alternarPlaylist(playlist.id)}
+                      className="w-4 h-4 accent-[#8b7ee0] rounded"
+                    />
+                    <span className="text-sm text-white">{playlist.nombre}</span>
                   </label>
                 ))
               )}

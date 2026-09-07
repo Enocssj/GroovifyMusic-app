@@ -14,8 +14,7 @@ export default function Biblioteca() {
   const [totalMeGusta, setTotalMeGusta] = useState(0);
   const [cargandoMeGusta, setCargandoMeGusta] = useState(true);
 
-  const artistasSeguidos = [];
-  const albumesGuardados = [];
+
 
   useEffect(() => {
     const cargarPlaylists = async () => {
@@ -77,8 +76,6 @@ export default function Biblioteca() {
 
   const tabs = [
     { id: "playlists", etiqueta: "Playlists" },
-    { id: "artistas", etiqueta: "Artistas" },
-    { id: "albumes", etiqueta: "Álbumes" },
   ];
 
   return (
@@ -156,54 +153,7 @@ export default function Biblioteca() {
             )}
           </div>
         )}
-
-        {tabActiva === "artistas" && (
-          <>
-            {artistasSeguidos.length === 0 ? (
-              <div className="text-center py-16">
-                <i className="pi pi-users text-slate-600 text-4xl mb-4" />
-                <p className="text-slate-400">Aún no sigues a ningún artista</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
-                {artistasSeguidos.map((artista) => (
-                  <div
-                    key={artista.nombre}
-                    className="cursor-pointer group text-center"
-                  >
-                    <div className="aspect-square rounded-full bg-gradient-to-br from-purple-400 to-purple-700 mb-3 group-hover:opacity-90 transition-opacity" />
-                    <p className="text-white font-semibold">{artista.nombre}</p>
-                  </div>
-                ))}
-              </div>
-            )}
-          </>
-        )}
-
-        {tabActiva === "albumes" && (
-          <>
-            {albumesGuardados.length === 0 ? (
-              <div className="text-center py-16">
-                <i className="pi pi-book text-slate-600 text-4xl mb-4" />
-                <p className="text-slate-400">
-                  Aún no tienes álbumes guardados
-                </p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
-                {albumesGuardados.map((album) => (
-                  <div key={album.nombre} className="cursor-pointer group">
-                    <div className="aspect-square rounded-xl bg-gradient-to-br from-purple-400 to-purple-700 mb-3 group-hover:opacity-90 transition-opacity" />
-                    <p className="text-white font-semibold">{album.nombre}</p>
-                    <p className="text-slate-500 text-sm">{album.artista}</p>
-                  </div>
-                ))}
-              </div>
-            )}
-          </>
-        )}
       </div>
-
       <NuevaPlaylistModal
         abierto={modalAbierto}
         onCerrar={() => setModalAbierto(false)}

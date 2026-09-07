@@ -165,7 +165,7 @@ export const useReproductor = () => {
   const context = useContext(ReproductorContext);
   if (!context) {
     throw new Error(
-      "useReproductor debe usarse dentro de un ReproductorProvider",
+      "Error interno",
     );
   }
   return context;

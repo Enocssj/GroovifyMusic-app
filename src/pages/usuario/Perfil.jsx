@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../auth/AuthContext";
+import axiosClient from "../../services/axiosClient"; // ajusta la ruta según dónde esté este archivo
 import EditarPerfilModal from "./EditarPerfilModal";
 
 const opcionesPerfil = [
@@ -12,6 +13,30 @@ export default function Perfil() {
   const { usuario, logout } = useAuth();
   const navigate = useNavigate();
   const [modalAbierto, setModalAbierto] = useState(false);
+
+  const [totalPlaylists, setTotalPlaylists] = useState(0);
+  const [totalFavoritas, setTotalFavoritas] = useState(0);
+  const [cargandoStats, setCargandoStats] = useState(true);
+
+  useEffect(() => {
+    const cargarEstadisticas = async () => {
+      try {
+        const [playlistsRes, favoritasRes] = await Promise.all([
+          axiosClient.get("/playlists/mis-playlists"),
+          axiosClient.get("/playlists/me-gusta"),
+        ]);
+
+        const soloPersonales = playlistsRes.data.filter((p) => p.tipo === "PERSONAL");
+        setTotalPlaylists(soloPersonales.length);
+        setTotalFavoritas(favoritasRes.data.length);
+      } catch (err) {
+        console.error("Error al cargar estadísticas del perfil:", err);
+      } finally {
+        setCargandoStats(false);
+      }
+    };
+    cargarEstadisticas();
+  }, []);
 
   const manejarCerrarSesion = () => {
     logout();
@@ -50,14 +75,18 @@ export default function Perfil() {
           </div>
         </div>
 
-        {/* Estadísticas - en 0 porque es una cuenta nueva; se llenan con datos reales al conectar el backend */}
+        {/* Estadísticas: Playlists y Favoritas reales; Siguiendo pendiente (feature aún no construido) */}
         <div className="inline-flex items-center gap-8 bg-[#1a1722] border border-[#2a2635] rounded-xl px-8 py-4 mb-8">
           <div className="text-center">
-            <p className="text-lg font-bold text-white">0</p>
+            <p className="text-lg font-bold text-white">
+              {cargandoStats ? "..." : totalPlaylists}
+            </p>
             <p className="text-xs text-slate-400">Playlists</p>
           </div>
           <div className="text-center">
-            <p className="text-lg font-bold text-white">0</p>
+            <p className="text-lg font-bold text-white">
+              {cargandoStats ? "..." : totalFavoritas}
+            </p>
             <p className="text-xs text-slate-400">Favoritas</p>
           </div>
           <div className="text-center">
