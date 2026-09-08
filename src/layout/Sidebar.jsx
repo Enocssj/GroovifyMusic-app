@@ -96,7 +96,7 @@ export default function Sidebar() {
             <p className="text-xs text-slate-500 px-2">Aún no tienes playlists</p>
           ) : (
             <div className="space-y-1">
-              {/* Opción rápida "Tus me gusta" */}
+              {/* Opción rápida "me gusta" */}
               <div
                 onClick={() => navigate("/biblioteca/tus-me-gusta")}
                 className="flex items-center gap-3 px-2 py-2 rounded-lg cursor-pointer hover:bg-[#221f2e] transition-colors group"

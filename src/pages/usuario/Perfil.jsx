@@ -6,7 +6,6 @@ import EditarPerfilModal from "./EditarPerfilModal";
 
 const opcionesPerfil = [
   { etiqueta: "Editar perfil", icono: "pi pi-pencil", accion: "modal" },
-  { etiqueta: "Configuración", icono: "pi pi-cog", accion: "/configuracion" },
 ];
 
 export default function Perfil() {
@@ -56,6 +55,7 @@ export default function Perfil() {
       </div>
 
       <div className="px-8 pt-8 max-w-2xl mx-auto">
+
         {/* Datos del usuario */}
         <div className="flex items-center gap-5 mb-6">
           {usuario?.fotoUrl ? (
@@ -75,7 +75,7 @@ export default function Perfil() {
           </div>
         </div>
 
-        {/* Estadísticas: Playlists y Favoritas reales; Siguiendo pendiente (feature aún no construido) */}
+        {/* Estadísticas: Playlists y Favoritas reales*/}
         <div className="inline-flex items-center gap-8 bg-[#1a1722] border border-[#2a2635] rounded-xl px-8 py-4 mb-8">
           <div className="text-center">
             <p className="text-lg font-bold text-white">

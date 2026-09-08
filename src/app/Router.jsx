@@ -15,12 +15,12 @@ import TusMeGusta from "../pages/usuario/TusMeGusta";
 import AlbumDetalle from "../pages/usuario/AlbumDetalle";
 import Reproductor from "../pages/usuario/Reproductor";
 import Perfil from "../pages/usuario/Perfil";
-import Configuracion from "../pages/usuario/Configuracion";
 
 // Vistas de artista
 import ArtistaPerfil from "../pages/artista/ArtistaPerfil";
 import MiBibliotecaArtista from "../pages/artista/MiBibliotecaArtista";
 import PlaylistDetalle from "../pages/usuario/PlaylistDetalle";
+import ReportesArtista from "../pages/artista/ReportesArtista";
 
 export default function Router() {
   return (
@@ -91,14 +91,7 @@ export default function Router() {
               </RutaProtegida>
             }
           />
-          <Route
-            path="/configuracion"
-            element={
-              <RutaProtegida>
-                <Configuracion />
-              </RutaProtegida>
-            }
-          />
+          
         </Route>
 
        
@@ -116,7 +109,7 @@ export default function Router() {
         
         <Route
           element={
-            <RutaProtegida>
+            <RutaProtegida rolesPermisos={["ARTISTA"]}>
               <AppLayoutArtista />
             </RutaProtegida>
           }
@@ -126,6 +119,7 @@ export default function Router() {
             path="/mi-biblioteca-artista"
             element={<MiBibliotecaArtista />}
           />
+           <Route path="/mis-reportes" element={<ReportesArtista />} />
         </Route>
 
         {/* Ruta 404 */}

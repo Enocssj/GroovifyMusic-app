@@ -4,6 +4,7 @@ import { useAuth } from "../auth/AuthContext"; // ajusta la ruta según dónde e
 const opcionesMenu = [
   { etiqueta: "Mi perfil", icono: "pi pi-user", ruta: "/mi-perfil-artista" },
   { etiqueta: "Mi biblioteca", icono: "pi pi-book", ruta: "/mi-biblioteca-artista" },
+  { etiqueta: "Reportes", icono: "pi pi-file-pdf", ruta: "/mis-reportes" },
 ];
 
 export default function SidebarArtista() {
